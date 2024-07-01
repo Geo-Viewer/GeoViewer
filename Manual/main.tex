@@ -1,0 +1,53 @@
+\documentclass[parskip=full]{scrreport}
+\KOMAoptions{fontsize=12pt}
+\RequirePackage{etex}
+
+\usepackage[utf8]{inputenc} % use utf8 file encoding for TeX sources
+\usepackage[T1]{fontenc} % avoid garbled Unicode text in pdf
+\usepackage[german]{babel} % german hyphenation, quotes, etc
+\usepackage{csquotes}
+\MakeOuterQuote{"}
+\usepackage{hyperref} % detailed hyperlink/pdf configuration
+\usepackage[left=20mm,right=20mm,top=10mm,bottom=25mm]{geometry}
+
+\usepackage{setspace}
+\usepackage{graphicx} % Required for inserting images
+% Useful packages
+% \usepackage{amsmath}
+\usepackage{tabularray}
+% \usepackage{svg}
+\usepackage{float}
+% \usepackage{booktabs}
+
+\newcommand{\squeezeup}{\vspace{-2.5mm}}
+
+\let\cleardoublepage=\clearpage
+
+\title{\includegraphics[width = 80mm]{Kapitel/graphics/logo.png}\\GeoViewer Manual}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\titlepage
+
+\tableofcontents
+
+\input{Kapitel/Einleitung}
+
+\input{Kapitel/Kamera Navigation}
+
+\input{Kapitel/Modell Import}
+
+\input{Kapitel/Modell mit Werkzeug bearbeiten}
+
+\input{Kapitel/Distanz zwischen zwei Punkten messen}
+
+\input{Kapitel/Schnelleinstellungen}
+
+\input{Kapitel/Hardware Anforderungen}
+
+\input{Kapitel/Konfiguration}
+
+\end{document}

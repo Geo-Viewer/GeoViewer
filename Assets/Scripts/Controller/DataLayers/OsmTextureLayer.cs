@@ -1,0 +1,66 @@
+﻿using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using GeoViewer.Controller.Networking;
+using GeoViewer.Model.DataLayers.Settings;
+using GeoViewer.Model.Globe;
+using GeoViewer.Model.Grid;
+using GeoViewer.View.Rendering;
+using UnityEngine;
+
+namespace GeoViewer.Controller.DataLayers
+{
+    /// <summary>
+    /// A texture layer for requesting and rendering textures based on Osm-format
+    /// </summary>
+    public class OsmTextureLayer : DataLayer<OsmTextureLayerSettings, Texture2D>, ITextureLayer
+    {
+        public const string ZoomIdentifier = "{zoom}";
+        public const string XCordIdentifier = "{x}";
+        public const string YCordIdentifier = "{y}";
+
+        public SegmentationSettings SegmentationSettings => Settings.SegmentationSettings;
+
+        /// <summary>
+        /// Stores a client for requesting the data.
+        /// </summary>
+        private readonly HttpClient _client = HttpClientFactory.CreateOsmClient();
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="OsmTextureLayer"/> class.
+        /// </summary>
+        /// <param name="settings">The settings for the <see cref="OsmTextureLayer"/></param>
+        public OsmTextureLayer(OsmTextureLayerSettings settings) : base(settings)
+        {
+        }
+
+        /// <inheritdoc/>
+        public override void RenderData(Texture2D data, TileGameObject tileGameObject, MapRenderer mapRenderer)
+        {
+            tileGameObject.SetTexture(data, Priority);
+        }
+
+        /// <inheritdoc/>
+        protected override async Task<Texture2D> RequestDataInternal((TileId tileId, GlobeArea globeArea) request,
+            CancellationToken token)
+        {
+            var url = Settings.Url.Replace(ZoomIdentifier, request.tileId.Zoom.ToString(),
+                    StringComparison.OrdinalIgnoreCase)
+                .Replace(XCordIdentifier, request.tileId.Coordinates.x.ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace(YCordIdentifier, request.tileId.Coordinates.y.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            var response = await _client.GetAsync(url, token);
+            response.EnsureSuccessStatusCode();
+
+            var texture = new Texture2D(1, 1)
+            {
+                name = request.tileId.ToString(),
+                filterMode = Settings.FilterMode
+            };
+            texture.LoadImage(await response.Content.ReadAsByteArrayAsync());
+
+            return texture;
+        }
+    }
+}

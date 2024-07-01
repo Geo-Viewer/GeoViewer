@@ -1,0 +1,18 @@
+\chapter{Konfiguration}
+Die Konfigurationsdatei befindet sich auf Windows in\\
+\emph{C:\textbackslash Users\textbackslash\%USER\%\textbackslash AppData\textbackslash Roaming\textbackslash GeoViewer\textbackslash config.json} und auf Linux in\\ $\sim$/.config/GeoViewer/config.json
+
+Die Konfiguration enthält die folgenden Einträge:
+
+\begin{itemize}
+    \item OpentopodataUrl: "https://example.com/v1/"
+    \item HeightDataset: aster30m,
+    \item HeightInterpolationMethod: cubic
+    \item TileResolution: 15
+    \item TileZoomFactor: 19
+    \item MapRadius: 4
+    \item OpenStreetMapUrl: "https://tile.openstreetmap.org/{0}/{1}/{2}.png"
+    \item DataPath: "Data"
+\end{itemize}
+
+Für Opentopdata Setup siehe \url{https://www.opentopodata.org/}
