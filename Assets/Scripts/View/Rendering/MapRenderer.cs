@@ -80,6 +80,7 @@ namespace GeoViewer.View.Rendering
 
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
+        private readonly ConcurrentDictionary<Transform, GlobePoint> _mapObjects = new(); //TODO: somehow update GlobePoint on move 
 
         private TaskCompletionSource<object> _updateCancelTask = new();
 
@@ -228,7 +229,7 @@ namespace GeoViewer.View.Rendering
             }
 
             _enabled = true;
-            SetNewOrigin(initialOrigin);
+            MoveOrigin(initialOrigin);
             UpdateMap();
         }
 
@@ -285,7 +286,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Clears the whole rendered ma and data layer caches
         /// </summary>
-        public void ClearMap()
+        public void ClearMap(bool clearAttachedObjects = false)
         {
             _enabled = false;
             _updateCancelTask.SetCanceled();
@@ -295,7 +296,9 @@ namespace GeoViewer.View.Rendering
             }
 
             RemoveTiles(_renderedTiles.Keys);
-            SetNewOrigin(new GlobePoint());
+            if (clearAttachedObjects)
+                _mapObjects.Clear();
+            MoveOrigin(new GlobePoint());
             CurrentWorldScale = 1f;
             _mapParent.localScale = Vector3.one;
 
@@ -324,12 +327,14 @@ namespace GeoViewer.View.Rendering
             {
                 throw new ArgumentException("Unknown layer type");
             }
+
             _updateCancelTask.SetCanceled();
 
             foreach (var tile in _renderedTiles)
             {
                 clearAction?.Invoke(tile.Value);
             }
+
             if (queueUpdate)
                 UpdateMap();
         }
@@ -474,7 +479,7 @@ namespace GeoViewer.View.Rendering
             if (Vector3.Distance(_rotationCenter!.position, Vector3.zero) >
                 MaxRotationCenterDistance)
             {
-                SetNewOrigin(_rotationCenter.position, true);
+                MoveOrigin(_rotationCenter.position);
             }
 
             const float targetDistance = MinTargetDistance + (MaxTargetDistance - MinTargetDistance) / 2;
@@ -492,21 +497,16 @@ namespace GeoViewer.View.Rendering
         /// Sets the new origin to a given <paramref name="globePoint"/>
         /// </summary>
         /// <param name="globePoint">The <see cref="GlobePoint"/> to set the origin to</param>
-        /// <param name="moveMap">Whether the map should be countermoved, so that target position does not change</param>
-        private void SetNewOrigin(GlobePoint globePoint, bool moveMap = false)
+        public void MoveOrigin(GlobePoint globePoint)
         {
-            if (!moveMap) //This is only here to temporarily fix the recenter button. This should be removed when developing a multi-object system
-                Origin = globePoint;
+            Origin = globePoint;
             var newOriginPosition = ViewProjection.GlobePointToPosition(globePoint);
 
-            if (moveMap)
+            var delta = WorldPositionToApplicationPosition(newOriginPosition) -
+                        WorldPositionToApplicationPosition(_originPosition);
+            foreach (Transform transform in _mapParent.transform)
             {
-                var delta = WorldPositionToApplicationPosition(newOriginPosition) -
-                            WorldPositionToApplicationPosition(_originPosition);
-                foreach (Transform transform in _mapParent.transform)
-                {
-                    transform.position -= delta;
-                }
+                transform.position -= delta;
             }
 
             _originPosition = newOriginPosition;
@@ -516,10 +516,15 @@ namespace GeoViewer.View.Rendering
         /// Sets the new origin to a given <paramref name="applicationPosition"/>
         /// </summary>
         /// <param name="applicationPosition">The Application position to set the origin to</param>
-        /// <param name="moveMap">Whether the map should be countermoved, so that target position does not change</param>
-        private void SetNewOrigin(Vector3 applicationPosition, bool moveMap = false)
+        public void MoveOrigin(Vector3 applicationPosition)
         {
-            SetNewOrigin(ApplicationPositionToGlobePoint(applicationPosition), moveMap);
+            MoveOrigin(ApplicationPositionToGlobePoint(applicationPosition));
+        }
+
+        public void MoveOrigin(Transform mapObject)
+        {
+            if (!_mapObjects.TryGetValue(mapObject, out var point)) return;
+            MoveOrigin(point);
         }
 
         /// <summary>
@@ -528,7 +533,11 @@ namespace GeoViewer.View.Rendering
         /// <param name="transform">The transform to attach</param>
         public void AttachToMap(Transform transform)
         {
-            transform.parent = _mapParent;
+            var point = ApplicationPositionToGlobePoint(transform.position);
+            if (_mapObjects.TryAdd(transform, point))
+                transform.parent = _mapParent;
+            else
+                _mapObjects.TryUpdate(transform, point, _mapObjects[transform]);
         }
 
         /// <summary>
@@ -538,7 +547,7 @@ namespace GeoViewer.View.Rendering
         /// <param name="transform">The transform to attach</param>
         /// <param name="globePoint">The globe point to attach the transform to</param>
         /// <param name="pivotDelta">The amount to move the object pivot by</param>
-        /// <param name="attachToGround">Whether the object should be snapped to ground height</param>
+        /// <param name="attachToGround">Whether the pivot should be snapped to ground height</param>
         public void AttachToMap(Transform transform, GlobePoint globePoint, Vector3 pivotDelta,
             bool attachToGround = false)
         {
@@ -562,11 +571,13 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         /// <param name="tileId">The tile to get the neighbours of</param>
         /// <returns>An <see cref="IEnumerable{T}"/> containing all neighbours</returns>
-        public IEnumerable<(TileGameObject tileGameObject, Vector2Int direction)> GetRenderedNeighbours(TileGameObject tileObject)
+        public IEnumerable<(TileGameObject tileGameObject, Vector2Int direction)> GetRenderedNeighbours(
+            TileGameObject tileObject)
         {
             foreach (var renderedTile in _renderedTiles)
             {
-                if (!renderedTile.Value.RemovalInProgress && tileObject.TileId.IsNeighbourOf(renderedTile.Key, out var direction))
+                if (!renderedTile.Value.RemovalInProgress &&
+                    tileObject.TileId.IsNeighbourOf(renderedTile.Key, out var direction))
                 {
                     if (_currentSegmentation.Contains(renderedTile.Key))
                         yield return (renderedTile.Value, direction);

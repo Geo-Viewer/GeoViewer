@@ -1,5 +1,6 @@
 ﻿using System;
 using GeoViewer.Controller.Input;
+using GeoViewer.Model.Globe;
 using GeoViewer.Model.State;
 using GeoViewer.Model.Tools.Mode;
 using UnityEngine;
@@ -117,17 +118,14 @@ namespace GeoViewer.Controller.Movement
         /// Resets the position of the rotation center back to (0, 0, 0).
         /// This does not change the camera's rotation or zoom.
         /// </summary>
-        public void ResetPosition(bool resetZoom = false)
+        public void SetPosition(Vector3 position, bool resetZoom = false)
         {
             // we can't reset the position without the rotation center
             if (ApplicationState.Instance.RotationCenter == null)
             {
                 return;
             }
-
-            var mapRenderer = ApplicationState.Instance.MapRenderer;
-            ApplicationState.Instance.RotationCenter.transform.position =
-                mapRenderer.GlobePointToApplicationPosition(mapRenderer.Origin);
+            ApplicationState.Instance.RotationCenter.transform.position = position;
 
             if (resetZoom)
             {

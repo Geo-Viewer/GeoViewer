@@ -31,7 +31,7 @@ namespace GeoViewer.Controller.ObjLoading
         private const string LayerSelectableName = "Selectable";
         private static int _layerDefault;
         private static int _layerSelectable;
-        private static GameObject? _loadedObject;
+        public static GameObject? LoadedObject;
         private static OBJLoader? _objLoader;
 
         /// <summary>
@@ -105,12 +105,12 @@ namespace GeoViewer.Controller.ObjLoading
         private static void CombineChildMeshes()
         {
             // if no object is loaded, we can't combine any meshes
-            if (_loadedObject is null)
+            if (LoadedObject is null)
             {
                 return;
             }
 
-            var meshFilters = _loadedObject.GetComponentsInChildren<MeshFilter>();
+            var meshFilters = LoadedObject.GetComponentsInChildren<MeshFilter>();
             var combineInstances = new CombineInstance[meshFilters.Length];
 
             for (var i = 0; i < meshFilters.Length; i++)
@@ -124,11 +124,11 @@ namespace GeoViewer.Controller.ObjLoading
                 name = "combinedMesh"
             };
             combinedMesh.CombineMeshes(combineInstances, false, false);
-            var meshFilter = _loadedObject.AddComponent<MeshFilter>();
+            var meshFilter = LoadedObject.AddComponent<MeshFilter>();
             meshFilter.mesh = combinedMesh;
-            var meshCollider = _loadedObject.AddComponent<MeshCollider>();
+            var meshCollider = LoadedObject.AddComponent<MeshCollider>();
             meshCollider.sharedMesh = combinedMesh;
-            var meshRenderer = _loadedObject.AddComponent<MeshRenderer>();
+            var meshRenderer = LoadedObject.AddComponent<MeshRenderer>();
             meshRenderer.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         }
 
@@ -157,11 +157,11 @@ namespace GeoViewer.Controller.ObjLoading
         {
             _objLoader = new OBJLoader();
             //Clear old model
-            if (_loadedObject != null)
+            if (LoadedObject != null)
             {
-                _loadedObject.layer = _layerDefault;
-                SetChildObjectsLayer(_loadedObject, _layerDefault);
-                Destroy(_loadedObject);
+                LoadedObject.layer = _layerDefault;
+                SetChildObjectsLayer(LoadedObject, _layerDefault);
+                Destroy(LoadedObject);
             }
 
             if (objPath == null)
@@ -175,19 +175,19 @@ namespace GeoViewer.Controller.ObjLoading
             }
 
             var mtlPath = await GetMtlPathFromObjFile(objPath);
-            _loadedObject = await _objLoader.Load(objPath, mtlPath);
+            LoadedObject = await _objLoader.Load(objPath, mtlPath);
 
-            if (_loadedObject.transform.childCount > 1)
+            if (LoadedObject.transform.childCount > 1)
             {
-                SetChildObjectsLayer(_loadedObject, _layerDefault);
+                SetChildObjectsLayer(LoadedObject, _layerDefault);
                 CombineChildMeshes();
-                _loadedObject.layer = _layerSelectable;
+                LoadedObject.layer = _layerSelectable;
             }
 
             //lowest point of the loaded object's mesh.
             //this point helps adjusting the height of the model so that this point is at height 0 in the scene.
             var lowestYValue = _objLoader.GetLowestVector().y;
-            ApplicationState.Instance.MapRenderer.AttachToMap(_loadedObject.transform,
+            ApplicationState.Instance.MapRenderer.AttachToMap(LoadedObject.transform,
                 ApplicationState.Instance.MapRenderer.Origin, new Vector3(0, lowestYValue, 0), true);
         }
     }
