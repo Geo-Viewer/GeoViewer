@@ -52,11 +52,6 @@ namespace GeoViewer.View.Rendering
         private const float MaxRotationCenterDistance = 100f;
 
         /// <summary>
-        /// The minimum size of the request area (Calculated by MinRequestAreaSize * ApplicationState.RadiusMultiplier)
-        /// </summary>
-        private const float MinRequestAreaSize = 100f;
-
-        /// <summary>
         /// The minimum tile count of the map
         /// </summary>
         private const int BaseTileCount = 16;
@@ -80,7 +75,9 @@ namespace GeoViewer.View.Rendering
 
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
-        private readonly ConcurrentDictionary<Transform, GlobePoint> _mapObjects = new(); //TODO: somehow update GlobePoint on move 
+
+        private readonly ConcurrentDictionary<Transform, GlobePoint>
+            _mapObjects = new(); //TODO: somehow update GlobePoint on move 
 
         private TaskCompletionSource<object> _updateCancelTask = new();
 
@@ -93,7 +90,7 @@ namespace GeoViewer.View.Rendering
 
         private HashSet<TileId> _currentSegmentation = new();
         private SegmentationSettings CurrentSegmentationSettings => _layerManager.CurrentSegmentationSettings;
-        
+
         #endregion Fields
 
         #region Configuration
@@ -247,12 +244,16 @@ namespace GeoViewer.View.Rendering
         /// <returns>A new <see cref="GlobeArea"/> to be requested</returns>
         private GlobeArea GetRequestArea()
         {
-            var pos = _target!.position;
-            var distance = Math.Max(Vector3.Distance(pos, ResampleHeight(pos)), MinRequestAreaSize);
+            var middle = ResampleHeight(ApplicationState.Instance.RotationCenter!.transform.position);
+            var vec = middle - _target!.position;
+            var distance = Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale), Math.Abs(vec.y) / CurrentWorldScale);
+
+            var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
+            var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
             var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
             return new GlobeArea(
-                ApplicationPositionToGlobePoint(pos + new Vector3(-1, 0, 1) * (distance * multiplier)),
-                ApplicationPositionToGlobePoint(pos + new Vector3(1, 0, -1) * (distance * multiplier)));
+                ApplicationPositionToGlobePoint(corner1),
+                ApplicationPositionToGlobePoint(corner2));
         }
 
         /// <summary>
@@ -625,7 +626,7 @@ namespace GeoViewer.View.Rendering
         private Vector3 ResampleHeight(Vector3 position)
         {
             if (Physics.Raycast(new Vector3(position.x, 10000, position.z), Vector3.down, out var hit,
-                Mathf.Infinity, 1 << TerrainLayer))
+                    Mathf.Infinity, 1 << TerrainLayer))
             {
                 position.y = hit.point.y;
             }
