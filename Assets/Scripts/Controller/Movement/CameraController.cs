@@ -118,7 +118,7 @@ namespace GeoViewer.Controller.Movement
         /// Resets the position of the rotation center back to (0, 0, 0).
         /// This does not change the camera's rotation or zoom.
         /// </summary>
-        public void SetPosition(Vector3 position, bool resetZoom = false)
+        public void SetPosition(Vector3 position, bool resetZoom = true)
         {
             // we can't reset the position without the rotation center
             if (ApplicationState.Instance.RotationCenter == null)

@@ -153,18 +153,13 @@ namespace GeoViewer.Controller.UI
             {
                 ApplicationState.Instance.MapRenderer.MoveOrigin(result.Response.GlobePoint);
             }
-
-            if (ApplicationState.Instance.Camera == null)
-            {
-                ApplicationState.Instance.Camera.GetComponent<CameraController>().SetPosition(Vector3.zero);
-            }
+            ResetCamera(false);
 
             //Create and show map
             if (result.Response?.GlobePoint != null)
             {
-                ApplicationState.Instance.MapRenderer.BuildMap(result.Response.GlobePoint);
+                ApplicationState.Instance.MapRenderer.UpdateMap();
             }
-
 
             //show coordinate display
             _informationBox.SetVisible(result.Response?.GlobePoint != null);

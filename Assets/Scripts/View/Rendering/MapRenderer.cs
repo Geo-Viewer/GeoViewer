@@ -93,9 +93,7 @@ namespace GeoViewer.View.Rendering
 
         private HashSet<TileId> _currentSegmentation = new();
         private SegmentationSettings CurrentSegmentationSettings => _layerManager.CurrentSegmentationSettings;
-
-        private bool _enabled = true;
-
+        
         #endregion Fields
 
         #region Configuration
@@ -137,7 +135,7 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public async void UpdateMap()
         {
-            if (!_enabled || _target == null)
+            if (_target == null)
             {
                 return;
             }
@@ -218,22 +216,6 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Builds a new map at the given <paramref name="initialOrigin"/>
-        /// </summary>
-        /// <param name="initialOrigin">The initial origin of the map</param>
-        public void BuildMap(GlobePoint initialOrigin)
-        {
-            if (_enabled)
-            {
-                ClearMap();
-            }
-
-            _enabled = true;
-            MoveOrigin(initialOrigin);
-            UpdateMap();
-        }
-
-        /// <summary>
         /// Tries to get or create a <see cref="TileGameObject"/> for the given <paramref name="tileId"/>.
         /// </summary>
         /// <param name="tileId">The tileId of the tile to get</param>
@@ -288,7 +270,6 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public void ClearMap(bool clearAttachedObjects = false)
         {
-            _enabled = false;
             _updateCancelTask.SetCanceled();
             foreach (var tile in _requests.Keys)
             {
