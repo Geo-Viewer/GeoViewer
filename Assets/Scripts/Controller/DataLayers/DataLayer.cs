@@ -23,10 +23,12 @@ namespace GeoViewer.Controller.DataLayers
         /// <summary>
         /// The settings for this layer.
         /// </summary>
-        protected readonly TSettings Settings;
+        protected readonly TSettings _settings;
+
+        public DataLayerAnalytics Analytics { get; } = new();
 
         public bool Active { get; private set; } = true;
-        public int Priority => Settings.Priority;
+        public DataLayerSettings Settings => _settings;
 
         public event Action<IDataLayer>? ActiveChanged;
 
@@ -39,8 +41,8 @@ namespace GeoViewer.Controller.DataLayers
         /// <param name="settings">The settings for the <see cref="DataLayer{TSettings, TData}"/></param>
         protected DataLayer(TSettings settings)
         {
-            Settings = settings;
-            _semaphore = new SemaphoreSlim(Settings.ParallelRequests);
+            _settings = settings;
+            _semaphore = new SemaphoreSlim(_settings.ParallelRequests);
         }
 
         /// <summary>
@@ -62,7 +64,7 @@ namespace GeoViewer.Controller.DataLayers
             try
             {
                 result = await RequestDataInternal(request, token).ConfigureAwait(false);
-                if (_cache.Count < Settings.CacheSize)
+                if (_cache.Count < _settings.CacheSize)
                 {
                     _cache.TryAdd(request.area, result);
                 }
@@ -70,20 +72,21 @@ namespace GeoViewer.Controller.DataLayers
                 return result;
             }
             catch (Exception e) when (e is not OperationCanceledException && e is not WebException
+                                      {
+                                          Status: WebExceptionStatus.RequestCanceled
+                                      })
             {
-                Status: WebExceptionStatus.RequestCanceled
-            })
-            {
-                UnityEngine.Debug.LogWarning($"Layer {Settings.Name} failed to load with error: {e}. Disabling Layer.");
+                UnityEngine.Debug.LogWarning($"Layer {_settings.Name} failed to load with error: {e}. Disabling Layer.");
                 SetActive(false);
-                throw new LayerFailedException($"Layer {Settings.Name} failed.", e, this);
+                throw new LayerFailedException($"Layer {_settings.Name} failed.", e, this);
             }
             finally
             {
                 stopWatch.Stop();
-                if (Settings.RequestsPerSecond > 0)
+                Analytics.AddRequestTime((int)stopWatch.ElapsedMilliseconds);
+                if (_settings.RequestsPerSecond > 0)
                 {
-                    DelayedRelease(Settings.ParallelRequests / Settings.RequestsPerSecond * 1000 -
+                    DelayedRelease(_settings.ParallelRequests / _settings.RequestsPerSecond * 1000 -
                                    (int)stopWatch.ElapsedMilliseconds);
                 }
                 else
@@ -94,7 +97,26 @@ namespace GeoViewer.Controller.DataLayers
         }
 
         /// <inheritdoc/>
-        public abstract void RenderData(TData data, TileGameObject tileGameObject, MapRenderer mapRenderer);
+        public void RenderData(TData data, TileGameObject tileGameObject, MapRenderer mapRenderer)
+        {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+            try
+            {
+                RenderDataInternal(data, tileGameObject, mapRenderer);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning($"Layer {_settings.Name} failed to load with error: {e}. Disabling Layer.");
+                SetActive(false);
+                throw new LayerFailedException($"Layer {_settings.Name} failed.", e, this);
+            }
+            finally
+            {
+                stopWatch.Stop();
+                Analytics.AddRenderTime((int)stopWatch.ElapsedMilliseconds);
+            }
+        }
 
         /// <inheritdoc/>
         public void ClearCache()
@@ -122,6 +144,14 @@ namespace GeoViewer.Controller.DataLayers
         /// <returns>A Task with the requested data</returns>
         protected abstract Task<TData> RequestDataInternal((TileId tileId, GlobeArea globeArea) request,
             CancellationToken token);
+
+        /// <summary>
+        /// Renders the given <paramref name="data"/> to a given <paramref name="tileGameObject"/>.
+        /// </summary>
+        /// <param name="data">The data to render</param>
+        /// <param name="tileGameObject">The <see cref="TileGameObject"/> to render the data onto</param>
+        /// <param name="mapRenderer">The map renderer the tile belongs to</param>
+        protected abstract void RenderDataInternal(TData data, TileGameObject tileGameObject, MapRenderer mapRenderer);
 
         /// <summary>
         /// Releases the semaphore after the given <paramref name="milliseconds"/>

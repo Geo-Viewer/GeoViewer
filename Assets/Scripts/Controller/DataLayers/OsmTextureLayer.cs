@@ -21,7 +21,7 @@ namespace GeoViewer.Controller.DataLayers
         public const string XCordIdentifier = "x";
         public const string YCordIdentifier = "y";
 
-        public SegmentationSettings SegmentationSettings => Settings.SegmentationSettings;
+        public SegmentationSettings SegmentationSettings => _settings.SegmentationSettings;
 
         /// <summary>
         /// Stores a client for requesting the data.
@@ -37,16 +37,16 @@ namespace GeoViewer.Controller.DataLayers
         }
 
         /// <inheritdoc/>
-        public override void RenderData(Texture2D data, TileGameObject tileGameObject, MapRenderer mapRenderer)
+        protected override void RenderDataInternal(Texture2D data, TileGameObject tileGameObject, MapRenderer mapRenderer)
         {
-            tileGameObject.SetTexture(data, Priority);
+            tileGameObject.SetTexture(data, _settings.Priority);
         }
 
         /// <inheritdoc/>
         protected override async Task<Texture2D> RequestDataInternal((TileId tileId, GlobeArea globeArea) request,
             CancellationToken token)
         {
-            var url = StringFormatter.FormatString(Settings.Url, tag => tag.ToString().ToLower() switch
+            var url = StringFormatter.FormatString(_settings.Url, tag => tag.ToString().ToLower() switch
             {
                 ZoomIdentifier => request.tileId.Zoom.ToString(),
                 XCordIdentifier => request.tileId.Coordinates.x,
@@ -60,7 +60,7 @@ namespace GeoViewer.Controller.DataLayers
             var texture = new Texture2D(1, 1)
             {
                 name = request.tileId.ToString(),
-                filterMode = Settings.FilterMode
+                filterMode = _settings.FilterMode
             };
             texture.LoadImage(await response.Content.ReadAsByteArrayAsync());
 

@@ -35,11 +35,11 @@ namespace GeoViewer.Controller.DataLayers
         /// <param name="settings">The settings for the <see cref="TopoSharpMeshLayer"/></param>
         public TopoSharpMeshLayer(TopoSharpMeshLayerSettings settings) : base(settings)
         {
-            _client = HttpClientFactory.CreateClient(new Uri(Settings.Url));
+            _client = HttpClientFactory.CreateClient(new Uri(_settings.Url));
         }
 
         /// <inheritdoc/>
-        public override void RenderData(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
+        protected override void RenderDataInternal(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
             MapRenderer mapRenderer)
         {
             var midpoint =
@@ -49,12 +49,12 @@ namespace GeoViewer.Controller.DataLayers
             var vertices = data.Select(point =>
                 mapRenderer.ApplicationPositionToWorldPosition(mapRenderer.GlobePointToApplicationPosition(point)) -
                 midpoint).ToArray();
-            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), Priority);
+            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), _settings.Priority);
  
             foreach (var neighbour in mapRenderer.GetRenderedNeighbours(tileGameObject))
             {
                 tileGameObject.AdjustVertexHeight(neighbour.tileGameObject, neighbour.direction,
-                    (uint)Settings.MeshResolution);
+                    (uint)_settings.MeshResolution);
             }
         }
 
@@ -62,15 +62,15 @@ namespace GeoViewer.Controller.DataLayers
         protected override async Task<IReadOnlyList<GlobePoint>> RequestDataInternal(
             (TileId tileId, GlobeArea globeArea) request, CancellationToken token)
         {
-            var globePoints = request.globeArea.GetPointGrid(Settings.MeshResolution);
+            var globePoints = request.globeArea.GetPointGrid(_settings.MeshResolution);
 
-            var uri = StringFormatter.FormatString(Settings.Url, tag => tag.ToString().ToLower() switch
+            var uri = StringFormatter.FormatString(_settings.Url, tag => tag.ToString().ToLower() switch
             {
                 MinLatIdentifier => request.globeArea.BoundsLat.Min.ToString(CultureInfo.InvariantCulture),
                 MaxLatIdentifier => request.globeArea.BoundsLat.Max.ToString(CultureInfo.InvariantCulture),
                 MinLonIdentifier => request.globeArea.BoundsLon.Min.ToString(CultureInfo.InvariantCulture),
                 MaxLonIdentifier => request.globeArea.BoundsLon.Max.ToString(CultureInfo.InvariantCulture),
-                ResolutionIdentifier => Settings.MeshResolution.ToString(CultureInfo.InvariantCulture),
+                ResolutionIdentifier => _settings.MeshResolution.ToString(CultureInfo.InvariantCulture),
                 _ => null
             });
 

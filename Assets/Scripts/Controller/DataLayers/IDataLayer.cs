@@ -1,4 +1,5 @@
 ﻿using System;
+using GeoViewer.Model.DataLayers.Settings;
 
 namespace GeoViewer.Controller.DataLayers
 {
@@ -14,10 +15,9 @@ namespace GeoViewer.Controller.DataLayers
         public bool Active { get; }
 
         /// <summary>
-        /// Returns the priority of this data layer
+        /// The base settings of this layer
         /// </summary>
-        /// <returns>The priority of this data layer</returns>
-        public int Priority { get; }
+        public DataLayerSettings Settings { get; }
 
         /// <summary>
         /// Clears the cache of this data layer
@@ -34,5 +34,10 @@ namespace GeoViewer.Controller.DataLayers
         /// Called, when the layer changes it's active value
         /// </summary>
         public event Action<IDataLayer> ActiveChanged;
+
+        /// <summary>
+        /// The Analytics for this DataLayer
+        /// </summary>
+        public DataLayerAnalytics Analytics { get; }
     }
 }
