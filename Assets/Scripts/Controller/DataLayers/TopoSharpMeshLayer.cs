@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GeoViewer.Controller.Map;
 using GeoViewer.Controller.Networking;
+using GeoViewer.Controller.Util;
 using GeoViewer.Model.DataLayers.Settings;
 using GeoViewer.Model.Globe;
 using GeoViewer.Model.Grid;
@@ -20,11 +21,11 @@ namespace GeoViewer.Controller.DataLayers
     /// </summary>
     public class TopoSharpMeshLayer : DataLayer<TopoSharpMeshLayerSettings, IReadOnlyList<GlobePoint>>, IMeshLayer
     {
-        public const string MinLatIdentifier = "{minlat}";
-        public const string MaxLatIdentifier = "{maxlat}";
-        public const string MinLonIdentifier = "{minlon}";
-        public const string MaxLonIdentifier = "{maxlon}";
-        public const string ResolutionIdentifier = "{resolution}";
+        public const string MinLatIdentifier = "minlat";
+        public const string MaxLatIdentifier = "maxlat";
+        public const string MinLonIdentifier = "minlon";
+        public const string MaxLonIdentifier = "maxlon";
+        public const string ResolutionIdentifier = "resolution";
 
         private readonly HttpClient _client;
 
@@ -63,12 +64,15 @@ namespace GeoViewer.Controller.DataLayers
         {
             var globePoints = request.globeArea.GetPointGrid(Settings.MeshResolution);
 
-            var uri = Settings.Url.Replace(MinLatIdentifier,
-                    request.globeArea.BoundsLat.Min.ToString(CultureInfo.InvariantCulture))
-                .Replace(MaxLatIdentifier, request.globeArea.BoundsLat.Max.ToString(CultureInfo.InvariantCulture))
-                .Replace(MinLonIdentifier, request.globeArea.BoundsLon.Min.ToString(CultureInfo.InvariantCulture))
-                .Replace(MaxLonIdentifier, request.globeArea.BoundsLon.Max.ToString(CultureInfo.InvariantCulture))
-                .Replace(ResolutionIdentifier, Settings.MeshResolution.ToString(CultureInfo.InvariantCulture));
+            var uri = StringFormatter.FormatString(Settings.Url, tag => tag.ToString().ToLower() switch
+            {
+                MinLatIdentifier => request.globeArea.BoundsLat.Min.ToString(CultureInfo.InvariantCulture),
+                MaxLatIdentifier => request.globeArea.BoundsLat.Max.ToString(CultureInfo.InvariantCulture),
+                MinLonIdentifier => request.globeArea.BoundsLon.Min.ToString(CultureInfo.InvariantCulture),
+                MaxLonIdentifier => request.globeArea.BoundsLon.Max.ToString(CultureInfo.InvariantCulture),
+                ResolutionIdentifier => Settings.MeshResolution.ToString(CultureInfo.InvariantCulture),
+                _ => null
+            });
 
             //send web request
             //using string.empty for the requestUri as the base address is set in client

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using GeoViewer.Controller.Networking;
+using GeoViewer.Controller.Util;
 using GeoViewer.Model.DataLayers.Settings;
 using GeoViewer.Model.Globe;
 using GeoViewer.Model.Grid;
@@ -16,9 +17,9 @@ namespace GeoViewer.Controller.DataLayers
     /// </summary>
     public class OsmTextureLayer : DataLayer<OsmTextureLayerSettings, Texture2D>, ITextureLayer
     {
-        public const string ZoomIdentifier = "{zoom}";
-        public const string XCordIdentifier = "{x}";
-        public const string YCordIdentifier = "{y}";
+        public const string ZoomIdentifier = "zoom";
+        public const string XCordIdentifier = "x";
+        public const string YCordIdentifier = "y";
 
         public SegmentationSettings SegmentationSettings => Settings.SegmentationSettings;
 
@@ -45,10 +46,13 @@ namespace GeoViewer.Controller.DataLayers
         protected override async Task<Texture2D> RequestDataInternal((TileId tileId, GlobeArea globeArea) request,
             CancellationToken token)
         {
-            var url = Settings.Url.Replace(ZoomIdentifier, request.tileId.Zoom.ToString(),
-                    StringComparison.OrdinalIgnoreCase)
-                .Replace(XCordIdentifier, request.tileId.Coordinates.x.ToString(), StringComparison.OrdinalIgnoreCase)
-                .Replace(YCordIdentifier, request.tileId.Coordinates.y.ToString(), StringComparison.OrdinalIgnoreCase);
+            var url = StringFormatter.FormatString(Settings.Url, tag => tag.ToString().ToLower() switch
+            {
+                ZoomIdentifier => request.tileId.Zoom.ToString(),
+                XCordIdentifier => request.tileId.Coordinates.x,
+                YCordIdentifier => request.tileId.Coordinates.y,
+                _ => null
+            });
 
             var response = await _client.GetAsync(url, token);
             response.EnsureSuccessStatusCode();
