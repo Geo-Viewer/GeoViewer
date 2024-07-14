@@ -1,3 +1,5 @@
+using System;
+
 namespace GeoViewer.Controller.Util
 {
     public class AvgBufferInt
@@ -21,7 +23,7 @@ namespace GeoViewer.Controller.Util
             var removed = _elements[_currentIndex];
             _elements[_currentIndex] = number;
 
-            Average += (float)(number - removed) / Size;
+            Average = Math.Max(Average + (float)(number - removed) / Size, 0);
 
             _currentIndex = (_currentIndex + 1) % Size;
         }

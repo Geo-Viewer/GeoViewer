@@ -5,7 +5,7 @@ namespace GeoViewer.Controller.DataLayers
 {
     public class DataLayerAnalytics
     {
-        private const int AnalyticsTimeBufferSize = 20;
+        private const int AnalyticsTimeBufferSize = 100;
 
         private readonly AvgBufferInt _requestTimeBuffer = new(AnalyticsTimeBufferSize);
         public float AverageRequestTime => _requestTimeBuffer.Average;
