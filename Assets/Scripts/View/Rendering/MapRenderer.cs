@@ -140,9 +140,10 @@ namespace GeoViewer.View.Rendering
             AdjustWorldScaleAndPosition();
 
             CurrentRequestArea = GetRequestArea();
-            var frustum = GetCameraGlobeFrustum();
+            var frustum = ((IGlobeMask)GetCameraGlobeFrustum());
+            frustum.ScaleAround(ApplicationPositionToGlobePoint(ResampleHeight(ApplicationState.Instance.RotationCenter.transform.position)), 1.5f);
             _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount)
-                .Where(x => ((IGlobeMask)frustum).Intersects(TileToArea(x))).ToHashSet();
+                .Where(x => frustum.Intersects(TileToArea(x))).ToHashSet();
 
             //Collect all tasks we have to wait for
             List<TileId> requestIds = new();

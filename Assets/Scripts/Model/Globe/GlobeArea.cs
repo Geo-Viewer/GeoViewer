@@ -37,10 +37,10 @@ namespace GeoViewer.Model.Globe
 
         public GlobePoint[] Points { get; }
 
-        public GlobePoint NorthEastPoint => new(BoundsLat.Max, BoundsLon.Max);
-        public GlobePoint NorthWestPoint => new(BoundsLat.Max, BoundsLon.Min);
-        public GlobePoint SouthEastPoint => new(BoundsLat.Min, BoundsLon.Max);
-        public GlobePoint SouthWestPoint => new(BoundsLat.Min, BoundsLon.Min);
+        public GlobePoint NorthEastPoint => Points[0];
+        public GlobePoint NorthWestPoint => Points[3];
+        public GlobePoint SouthEastPoint => Points[1];
+        public GlobePoint SouthWestPoint => Points[2];
 
         /// <summary>
         /// Creates a new <see cref="GlobeArea"/> with the given bounds.
@@ -57,7 +57,13 @@ namespace GeoViewer.Model.Globe
             var lon = BoundsLon.Min + AreaWidth / 2;
             MidPoint = new GlobePoint(lat, lon);
 
-            Points = new[] { NorthEastPoint, NorthWestPoint, SouthWestPoint, SouthEastPoint };
+            Points = new[]
+            {
+                new GlobePoint(BoundsLat.Max, BoundsLon.Max),
+                new GlobePoint(BoundsLat.Min, BoundsLon.Max),
+                new GlobePoint(BoundsLat.Min, BoundsLon.Min),
+                new GlobePoint(BoundsLat.Max, BoundsLon.Min)
+            };
         }
 
         /// <summary>
