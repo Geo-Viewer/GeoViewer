@@ -26,7 +26,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
         /// </summary>
-        public float RequestRadiusMultiplier { get; set; } = 12f;
+        public float RequestRadiusMultiplier { get; set; } = 2f;
 
         /// <summary>
         /// A list of all data layers

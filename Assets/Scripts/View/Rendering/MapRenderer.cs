@@ -137,10 +137,12 @@ namespace GeoViewer.View.Rendering
                 return;
             }
 
-            CurrentRequestArea = GetRequestArea();
             AdjustWorldScaleAndPosition();
 
-            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
+            CurrentRequestArea = GetRequestArea();
+            var frustum = GetCameraGlobeFrustum();
+            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount)
+                .Where(x => ((IGlobeMask)frustum).Intersects(TileToArea(x))).ToHashSet();
 
             //Collect all tasks we have to wait for
             List<TileId> requestIds = new();
@@ -246,14 +248,51 @@ namespace GeoViewer.View.Rendering
         {
             var middle = ResampleHeight(ApplicationState.Instance.RotationCenter!.transform.position);
             var vec = middle - _target!.position;
-            var distance = Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale), Math.Abs(vec.y) / CurrentWorldScale);
+            var distance = Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
+                Math.Abs(vec.y) / CurrentWorldScale);
 
-            var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
-            var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
             var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
+            var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale * multiplier);
+            var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale * multiplier);
             return new GlobeArea(
                 ApplicationPositionToGlobePoint(corner1),
                 ApplicationPositionToGlobePoint(corner2));
+        }
+
+        public GlobePolygon GetCameraGlobeFrustum()
+        {
+            var camera = ApplicationState.Instance.Camera;
+            if (camera == null)
+                return new GlobePolygon(new [] {new GlobePoint()});
+            var height = ResampleHeight(ApplicationState.Instance.RotationCenter.transform.position).y;
+            Ray bottomLeft = camera.ViewportPointToRay(new Vector3(0, 0, 0));
+            Ray topLeft = camera.ViewportPointToRay(new Vector3(0, 1, 0));
+            Ray topRight = camera.ViewportPointToRay(new Vector3(1, 1, 0));
+            Ray bottomRight = camera.ViewportPointToRay(new Vector3(1, 0, 0));
+
+            return new GlobePolygon(new[]
+            {
+                ApplicationPositionToGlobePoint(GetPointAtHeight(bottomLeft, height, camera.farClipPlane)),
+                ApplicationPositionToGlobePoint(GetPointAtHeight(topLeft, height, camera.farClipPlane)),
+                ApplicationPositionToGlobePoint(GetPointAtHeight(topRight, height, camera.farClipPlane)),
+                ApplicationPositionToGlobePoint(GetPointAtHeight(bottomRight, height, camera.farClipPlane)),
+            });
+
+            Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
+            {
+                if (ray.direction.y != 0)
+                {
+                    var t = (ray.origin.y - height) / -ray.direction.y;
+
+                    if (t >= 0 && t <= farclip)
+                    {
+                        return ray.origin + (((ray.origin.y - height) / -ray.direction.y) * ray.direction);
+                    }
+                }
+
+                var vec = ray.origin + farclip * ray.direction;
+                return new Vector3(vec.x, height, vec.z);
+            }
         }
 
         /// <summary>
@@ -393,7 +432,7 @@ namespace GeoViewer.View.Rendering
                     else
                     {
                         var subArea = settings.Projection.TileToGlobeArea(current);
-                        if (subArea.Intersects(area))
+                        if (((IGlobeMask)subArea).Intersects(area))
                         {
                             queue.Enqueue(subTile);
                         }
@@ -471,8 +510,6 @@ namespace GeoViewer.View.Rendering
                 CurrentWorldScale *= targetDistance / distance;
                 _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
             }
-
-            CurrentRequestArea = GetRequestArea();
         }
 
         /// <summary>
