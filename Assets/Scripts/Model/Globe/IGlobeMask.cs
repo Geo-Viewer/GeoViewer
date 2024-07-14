@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace GeoViewer.Model.Globe
 {
@@ -10,7 +11,7 @@ namespace GeoViewer.Model.Globe
 
         public bool Intersects(IGlobeMask globeMask)
         {
-            return globeMask.Points.Any(Contains);
+            return globeMask.Points.Any(Contains) || Points.Any(globeMask.Contains);
         }
 
         public bool Contains(IGlobeMask globeMask)

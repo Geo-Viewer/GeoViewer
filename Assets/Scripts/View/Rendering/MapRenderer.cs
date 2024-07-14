@@ -56,6 +56,12 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         private const int BaseTileCount = 16;
 
+        /// <summary>
+        /// The maximum factor the camera frustum will be multiplied with. This value ensures that additional tiles around
+        /// the camera frustum will be rendered.
+        /// </summary>
+        private const int MaxCameraFrustumMultiplier = 4;
+
         #endregion Settings
 
         #region Fields
@@ -140,10 +146,23 @@ namespace GeoViewer.View.Rendering
             AdjustWorldScaleAndPosition();
 
             CurrentRequestArea = GetRequestArea();
-            var frustum = ((IGlobeMask)GetCameraGlobeFrustum());
-            frustum.ScaleAround(ApplicationPositionToGlobePoint(ResampleHeight(ApplicationState.Instance.RotationCenter.transform.position)), 1.5f);
-            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount)
-                .Where(x => frustum.Intersects(TileToArea(x))).ToHashSet();
+
+            if (ApplicationState.Instance.Settings.EnableFrustumCulling)
+            {
+                var frustum = ((IGlobeMask)GetCameraGlobeFrustum());
+                var frustumScaleFactor = 1 + (MaxCameraFrustumMultiplier - 1) *
+                    (1 - ApplicationState.Instance.Settings.FrustumCullingStrength);
+                frustum.ScaleAround(
+                    ApplicationPositionToGlobePoint(
+                        ResampleHeight(_rotationCenter.transform.position)), frustumScaleFactor);
+                _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount)
+                    .Where(x => frustum.Intersects(TileToArea(x))).ToHashSet();
+            }
+            else
+            {
+                _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
+            }
+
 
             //Collect all tasks we have to wait for
             List<TileId> requestIds = new();
@@ -247,10 +266,10 @@ namespace GeoViewer.View.Rendering
         /// <returns>A new <see cref="GlobeArea"/> to be requested</returns>
         private GlobeArea GetRequestArea()
         {
-            var middle = ResampleHeight(ApplicationState.Instance.RotationCenter!.transform.position);
+            var middle = ResampleHeight(_rotationCenter!.transform.position);
             var vec = middle - _target!.position;
-            var distance = Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
-                Math.Abs(vec.y) / CurrentWorldScale);
+            var distance = Math.Max(Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
+                Math.Abs(vec.y) / CurrentWorldScale), ApplicationState.Instance.Settings.MinMapSize);
 
             var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
             var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale * multiplier);
@@ -264,8 +283,8 @@ namespace GeoViewer.View.Rendering
         {
             var camera = ApplicationState.Instance.Camera;
             if (camera == null)
-                return new GlobePolygon(new [] {new GlobePoint()});
-            var height = ResampleHeight(ApplicationState.Instance.RotationCenter.transform.position).y;
+                return new GlobePolygon(new[] { new GlobePoint() });
+            var height = ResampleHeight(_rotationCenter.transform.position).y;
             Ray bottomLeft = camera.ViewportPointToRay(new Vector3(0, 0, 0));
             Ray topLeft = camera.ViewportPointToRay(new Vector3(0, 1, 0));
             Ray topRight = camera.ViewportPointToRay(new Vector3(1, 1, 0));
@@ -664,7 +683,7 @@ namespace GeoViewer.View.Rendering
         private Vector3 ResampleHeight(Vector3 position)
         {
             if (Physics.Raycast(new Vector3(position.x, 10000, position.z), Vector3.down, out var hit,
-                    Mathf.Infinity, 1 << TerrainLayer))
+                Mathf.Infinity, 1 << TerrainLayer))
             {
                 position.y = hit.point.y;
             }
