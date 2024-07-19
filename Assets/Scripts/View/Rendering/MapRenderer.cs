@@ -256,13 +256,13 @@ namespace GeoViewer.View.Rendering
         {
             var middle = ResampleHeight(_rotationCenter!.transform.position);
             var vec = middle - _target!.position;
+            var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
             var distance = Math.Max(Math.Max(
                 Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
-                Math.Abs(vec.y) / CurrentWorldScale), ApplicationState.Instance.Settings.MinMapSize);
+                Math.Abs(vec.y) / CurrentWorldScale) * multiplier, ApplicationState.Instance.Settings.MinMapSize);
 
-            var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
-            var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale * multiplier);
-            var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale * multiplier);
+            var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
+            var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
             return new GlobeArea(
                 ApplicationPositionToGlobePoint(corner1),
                 ApplicationPositionToGlobePoint(corner2));
