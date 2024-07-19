@@ -36,12 +36,12 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// Whether Frustum Culling for map tiles should be used
         /// </summary>
-        public bool EnableFrustumCulling { get; set; } = true;
+        public bool EnableTileCulling { get; set; } = true;
 
         /// <summary>
         /// The strength of the frustum culling
         /// </summary>
-        public float FrustumCullingStrength { get; set; } = 0.75f;
+        public float CullingAngle { get; set; } = 90f;
 
         /// <summary>
         /// A list of all data layers

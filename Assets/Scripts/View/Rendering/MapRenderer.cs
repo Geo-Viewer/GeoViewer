@@ -146,22 +146,10 @@ namespace GeoViewer.View.Rendering
             AdjustWorldScaleAndPosition();
 
             CurrentRequestArea = GetRequestArea();
+            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
 
-            if (ApplicationState.Instance.Settings.EnableFrustumCulling)
-            {
-                var frustum = ((IGlobeMask)GetCameraGlobeFrustum());
-                var frustumScaleFactor = 1 + (MaxCameraFrustumMultiplier - 1) *
-                    (1 - ApplicationState.Instance.Settings.FrustumCullingStrength);
-                frustum.ScaleAround(
-                    ApplicationPositionToGlobePoint(
-                        ResampleHeight(_rotationCenter.transform.position)), frustumScaleFactor);
-                _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount)
-                    .Where(x => frustum.Intersects(TileToArea(x))).ToHashSet();
-            }
-            else
-            {
-                _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
-            }
+            if (ApplicationState.Instance.Settings.EnableTileCulling)
+                _currentSegmentation = ApplyCulling(_currentSegmentation);
 
 
             //Collect all tasks we have to wait for
@@ -268,7 +256,8 @@ namespace GeoViewer.View.Rendering
         {
             var middle = ResampleHeight(_rotationCenter!.transform.position);
             var vec = middle - _target!.position;
-            var distance = Math.Max(Math.Max(Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
+            var distance = Math.Max(Math.Max(
+                Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
                 Math.Abs(vec.y) / CurrentWorldScale), ApplicationState.Instance.Settings.MinMapSize);
 
             var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
@@ -279,24 +268,29 @@ namespace GeoViewer.View.Rendering
                 ApplicationPositionToGlobePoint(corner2));
         }
 
-        public GlobePolygon GetCameraGlobeFrustum()
+        /// <summary>
+        /// Tests whether a given tile should be culled
+        /// </summary>
+        /// <param name="tile">The tile to check</param>
+        /// <returns>true, if it should be culled, false otherwise</returns>
+        private HashSet<TileId> ApplyCulling(HashSet<TileId> segmentation)
         {
-            var camera = ApplicationState.Instance.Camera;
-            if (camera == null)
-                return new GlobePolygon(new[] { new GlobePoint() });
-            var height = ResampleHeight(_rotationCenter.transform.position).y;
-            Ray bottomLeft = camera.ViewportPointToRay(new Vector3(0, 0, 0));
-            Ray topLeft = camera.ViewportPointToRay(new Vector3(0, 1, 0));
-            Ray topRight = camera.ViewportPointToRay(new Vector3(1, 1, 0));
-            Ray bottomRight = camera.ViewportPointToRay(new Vector3(1, 0, 0));
+            const float lookingDownConstant = 0.5f;
+            var lookingDown = Vector3.ProjectOnPlane(_target.forward, Vector3.up).magnitude < lookingDownConstant;
+            var cameraForward = Vector3.ProjectOnPlane(lookingDown ? _target.up : _target.forward,
+                Vector3.up);
+            var camera = _target.GetComponent<Camera>();
+            var ray = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
 
-            return new GlobePolygon(new[]
+            Vector3 intersectionPoint = lookingDown
+                ? GetPointAtHeight(ray, ResampleHeight(_rotationCenter.position).y, camera.farClipPlane)
+                : _target.position;
+
+            return segmentation.Where(x =>
             {
-                ApplicationPositionToGlobePoint(GetPointAtHeight(bottomLeft, height, camera.farClipPlane)),
-                ApplicationPositionToGlobePoint(GetPointAtHeight(topLeft, height, camera.farClipPlane)),
-                ApplicationPositionToGlobePoint(GetPointAtHeight(topRight, height, camera.farClipPlane)),
-                ApplicationPositionToGlobePoint(GetPointAtHeight(bottomRight, height, camera.farClipPlane)),
-            });
+                var area = TileToArea(x);
+                return area.Points.Any((point) => IsInView(GlobePointToApplicationPosition(point)));
+            }).ToHashSet();
 
             Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
             {
@@ -312,6 +306,15 @@ namespace GeoViewer.View.Rendering
 
                 var vec = ray.origin + farclip * ray.direction;
                 return new Vector3(vec.x, height, vec.z);
+            }
+
+            bool IsInView(Vector3 position)
+            {
+                var tileVector = Vector3.ProjectOnPlane(position -
+                                                        intersectionPoint,
+                    Vector3.up);
+                return Vector3.Angle(cameraForward, tileVector) <=
+                       ApplicationState.Instance.Settings.CullingAngle;
             }
         }
 
@@ -452,7 +455,7 @@ namespace GeoViewer.View.Rendering
                     else
                     {
                         var subArea = settings.Projection.TileToGlobeArea(current);
-                        if (((IGlobeMask)subArea).Intersects(area))
+                        if (subArea.Intersects(area))
                         {
                             queue.Enqueue(subTile);
                         }

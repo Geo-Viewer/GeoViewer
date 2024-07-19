@@ -16,18 +16,16 @@ namespace GeoViewer.View.Rendering
 
         private void OnDrawGizmos()
         {
-            Gizmos.color = Color.green;
-            DrawGlobeMask(_mapRenderer.GetCameraGlobeFrustum());
             if (_mapRenderer.CurrentRequestArea != null)
             {
                 Gizmos.color = Color.blue;
-                DrawGlobeMask(_mapRenderer.CurrentRequestArea);
+                DrawGlobeArea(_mapRenderer.CurrentRequestArea);
             }
 
             Gizmos.color = Color.red;
             foreach (var tileId in _mapRenderer.CalculateSegmentation(_mapRenderer.CurrentRequestArea))
             {
-                DrawGlobeMask(_layerManager.CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId));
+                DrawGlobeArea(_layerManager.CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId));
             }
         }
 
@@ -39,25 +37,21 @@ namespace GeoViewer.View.Rendering
             }
         }
 
-        private void DrawGlobeMask(IGlobeMask mask)
+        private void DrawGlobeArea(GlobeArea area)
         {
-            Vector3? previous = null;
-            foreach (var point in mask.Points)
-            {
-                var current = _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(point,
-                    _mapRenderer.Origin.Altitude));
-                if (previous != null)
-                {
-                    Gizmos.DrawLine(previous.Value, current);
-                }
+            var ne = _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(area.NorthEastPoint,
+                _mapRenderer.Origin.Altitude));
+            var se = _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(area.SouthEastPoint,
+                _mapRenderer.Origin.Altitude));
+            var sw = _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(area.SouthWestPoint,
+                _mapRenderer.Origin.Altitude));
+            var nw = _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(area.NorthWestPoint,
+                _mapRenderer.Origin.Altitude));
 
-                previous = current;
-            }
-
-            Gizmos.DrawLine(_mapRenderer.GlobePointToApplicationPosition(new GlobePoint(mask.Points[0],
-                _mapRenderer.Origin.Altitude)), _mapRenderer.GlobePointToApplicationPosition(new GlobePoint(
-                mask.Points[^1],
-                _mapRenderer.Origin.Altitude)));
+            Gizmos.DrawLine(ne, se);
+            Gizmos.DrawLine(se, sw);
+            Gizmos.DrawLine(sw, nw);
+            Gizmos.DrawLine(nw, ne);
         }
     }
 }

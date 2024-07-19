@@ -8,7 +8,7 @@ using Random = System.Random;
 
 namespace GeoViewer.Controller.Util
 {
-    public class StringFormatter
+    public static class StringFormatter
     {
         private const char TagStartChar = '{';
         private const char TagEndChar = '}';

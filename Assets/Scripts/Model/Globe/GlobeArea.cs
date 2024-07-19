@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GeoViewer.Controller.Util;
 
 namespace GeoViewer.Model.Globe
@@ -8,7 +7,7 @@ namespace GeoViewer.Model.Globe
     /// <summary>
     /// A data class storing an rectangular area on the earth.
     /// </summary>
-    public class GlobeArea : IEquatable<GlobeArea>, IGlobeMask
+    public class GlobeArea : IEquatable<GlobeArea>
     {
         /// <summary>
         /// latitude bounds of the area in degrees with x &lt;= y
@@ -35,12 +34,12 @@ namespace GeoViewer.Model.Globe
         /// </summary>
         public GlobePoint MidPoint { get; }
 
-        public GlobePoint[] Points { get; }
+        public GlobePoint NorthEastPoint => new(BoundsLat.Max, BoundsLon.Max);
+        public GlobePoint NorthWestPoint => new(BoundsLat.Max, BoundsLon.Min);
+        public GlobePoint SouthEastPoint => new(BoundsLat.Min, BoundsLon.Max);
+        public GlobePoint SouthWestPoint => new(BoundsLat.Min, BoundsLon.Min);
 
-        public GlobePoint NorthEastPoint => Points[0];
-        public GlobePoint NorthWestPoint => Points[3];
-        public GlobePoint SouthEastPoint => Points[1];
-        public GlobePoint SouthWestPoint => Points[2];
+        public IEnumerable<GlobePoint> Points => GetCorners();
 
         /// <summary>
         /// Creates a new <see cref="GlobeArea"/> with the given bounds.
@@ -56,14 +55,6 @@ namespace GeoViewer.Model.Globe
             var lat = BoundsLat.Min + AreaHeight / 2;
             var lon = BoundsLon.Min + AreaWidth / 2;
             MidPoint = new GlobePoint(lat, lon);
-
-            Points = new[]
-            {
-                new GlobePoint(BoundsLat.Max, BoundsLon.Max),
-                new GlobePoint(BoundsLat.Min, BoundsLon.Max),
-                new GlobePoint(BoundsLat.Min, BoundsLon.Min),
-                new GlobePoint(BoundsLat.Max, BoundsLon.Min)
-            };
         }
 
         /// <summary>
@@ -101,11 +92,31 @@ namespace GeoViewer.Model.Globe
         /// <summary>
         /// Checks whether this <see cref="GlobeArea"/> contains a given <see cref="GlobePoint"/>
         /// </summary>
-        /// <param name="point">The <see cref="GlobePoint"/> to check</param>
+        /// <param name="globePoint">The <see cref="GlobePoint"/> to check</param>
         /// <returns><c>true</c>, if the <see cref="GlobeArea"/> contains the <see cref="GlobePoint"/>, <c>false</c> otherwise</returns>
-        public bool Contains(GlobePoint point)
+        public bool Contains(GlobePoint globePoint)
         {
-            return BoundsLat.Contains(point.Latitude) && BoundsLon.Contains(point.Longitude);
+            return BoundsLat.Contains(globePoint.Latitude) && BoundsLon.Contains(globePoint.Longitude);
+        }
+
+        /// <summary>
+        /// Checks whether this <see cref="GlobeArea"/> contains a given <see cref="GlobeArea"/>
+        /// </summary>
+        /// <param name="globeArea">The <see cref="GlobeArea"/> to check</param>
+        /// <returns><c>true</c>, if the <see cref="GlobeArea"/> contains the <see cref="GlobeArea"/>, <c>false</c> otherwise</returns>
+        public bool Contains(GlobeArea globeArea)
+        {
+            return BoundsLat.Contains(globeArea.BoundsLat) && BoundsLon.Contains(globeArea.BoundsLon);
+        }
+
+        /// <summary>
+        /// Checks whether this <see cref="GlobeArea"/> intersects with the given <see cref="GlobeArea"/>
+        /// </summary>
+        /// <param name="other">The <see cref="GlobeArea"/> to check</param>
+        /// <returns><c>true</c>, if the <see cref="GlobeArea"/> intersects with the <see cref="GlobeArea"/>, <c>false</c> otherwise</returns>
+        public bool Intersects(GlobeArea other)
+        {
+            return BoundsLat.Overlaps(other.BoundsLat) && BoundsLon.Overlaps(other.BoundsLon);
         }
 
         /// <summary>
@@ -119,6 +130,14 @@ namespace GeoViewer.Model.Globe
             var lon = Math.Clamp(globePoint.Longitude, BoundsLon.Min, BoundsLon.Max);
 
             return new GlobePoint(lat, lon);
+        }
+
+        private IEnumerable<GlobePoint> GetCorners()
+        {
+            yield return NorthEastPoint;
+            yield return SouthEastPoint;
+            yield return SouthWestPoint;
+            yield return NorthWestPoint;
         }
 
         /// <summary>
