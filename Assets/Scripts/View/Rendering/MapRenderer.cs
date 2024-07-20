@@ -56,12 +56,6 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         private const int BaseTileCount = 16;
 
-        /// <summary>
-        /// The maximum factor the camera frustum will be multiplied with. This value ensures that additional tiles around
-        /// the camera frustum will be rendered.
-        /// </summary>
-        private const int MaxCameraFrustumMultiplier = 4;
-
         #endregion Settings
 
         #region Fields
@@ -150,7 +144,6 @@ namespace GeoViewer.View.Rendering
 
             if (ApplicationState.Instance.Settings.EnableTileCulling)
                 _currentSegmentation = ApplyCulling(_currentSegmentation);
-
 
             //Collect all tasks we have to wait for
             List<TileId> requestIds = new();
@@ -269,10 +262,10 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Tests whether a given tile should be culled
+        /// Culls the given segmentation based on camera view
         /// </summary>
-        /// <param name="tile">The tile to check</param>
-        /// <returns>true, if it should be culled, false otherwise</returns>
+        /// <param name="segmentation">The segmentation to adjust</param>
+        /// <returns>The culled segmentation</returns>
         private HashSet<TileId> ApplyCulling(HashSet<TileId> segmentation)
         {
             const float lookingDownConstant = 0.5f;
@@ -280,10 +273,10 @@ namespace GeoViewer.View.Rendering
             var cameraForward = Vector3.ProjectOnPlane(lookingDown ? _target.up : _target.forward,
                 Vector3.up);
             var camera = _target.GetComponent<Camera>();
-            var ray = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
+            var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
 
             Vector3 intersectionPoint = lookingDown
-                ? GetPointAtHeight(ray, ResampleHeight(_rotationCenter.position).y, camera.farClipPlane)
+                ? GetPointAtHeight(camBottomRay, ResampleHeight(_rotationCenter.position).y, camera.farClipPlane)
                 : _target.position;
 
             return segmentation.Where(x =>
@@ -331,6 +324,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Clears the whole rendered ma and data layer caches
         /// </summary>
+        /// <param name="clearAttachedObjects">Whether attached objects should be removed</param>
         public void ClearMap(bool clearAttachedObjects = false)
         {
             _updateCancelTask.SetCanceled();
@@ -609,9 +603,9 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Returns all rendered Tiles that are neighbours of the given <paramref name="tileId"/>
+        /// Returns all rendered Tiles that are neighbours of the given <paramref name="tileObject"/>
         /// </summary>
-        /// <param name="tileId">The tile to get the neighbours of</param>
+        /// <param name="tileObject">The tile to get the neighbours of</param>
         /// <returns>An <see cref="IEnumerable{T}"/> containing all neighbours</returns>
         public IEnumerable<(TileGameObject tileGameObject, Vector2Int direction)> GetRenderedNeighbours(
             TileGameObject tileObject)
@@ -619,10 +613,10 @@ namespace GeoViewer.View.Rendering
             foreach (var renderedTile in _renderedTiles)
             {
                 if (!renderedTile.Value.RemovalInProgress &&
-                    tileObject.TileId.IsNeighbourOf(renderedTile.Key, out var direction))
+                    tileObject.TileId.IsNeighbourOf(renderedTile.Key, out var direction)
+                    && _currentSegmentation.Contains(renderedTile.Key))
                 {
-                    if (_currentSegmentation.Contains(renderedTile.Key))
-                        yield return (renderedTile.Value, direction);
+                    yield return (renderedTile.Value, direction);
                 }
             }
         }
@@ -686,7 +680,7 @@ namespace GeoViewer.View.Rendering
         private Vector3 ResampleHeight(Vector3 position)
         {
             if (Physics.Raycast(new Vector3(position.x, 10000, position.z), Vector3.down, out var hit,
-                Mathf.Infinity, 1 << TerrainLayer))
+                    Mathf.Infinity, 1 << TerrainLayer))
             {
                 position.y = hit.point.y;
             }
