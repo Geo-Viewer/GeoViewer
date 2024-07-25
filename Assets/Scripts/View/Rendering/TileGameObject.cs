@@ -152,7 +152,7 @@ namespace GeoViewer.View.Rendering
             var neighbourNormals = neighbourMesh.normals;
 
             var vertexInterval = (uint)Math.Pow(2, zoomDifference);
-            var tilePositionDelta = TileId.Coordinates - neighbour.TileId.GetTopLeftSubTile(zoomDifference).Coordinates;
+            var tilePositionDelta = TileId.Coordinates - neighbour.TileId.GetSubTile(zoomDifference).Coordinates;
 
             for (uint i = 0; i < resolution; i++)
             {

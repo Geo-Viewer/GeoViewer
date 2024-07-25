@@ -140,7 +140,7 @@ namespace GeoViewer.View.Rendering
             AdjustWorldScaleAndPosition();
 
             CurrentRequestArea = GetRequestArea();
-            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
+            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
 
             if (ApplicationState.Instance.Settings.EnableTileCulling)
                 _currentSegmentation = ApplyCulling(_currentSegmentation);
