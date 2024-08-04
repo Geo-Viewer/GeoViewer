@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace GeoViewer.Model.Grid
@@ -36,9 +37,9 @@ namespace GeoViewer.Model.Grid
         /// </summary>
         /// <param name="zoomDifference">The zoom difference</param>
         /// <returns>The <see cref="TileId"/> of the top left sub-tile</returns>
-        public TileId GetTopLeftSubTile(int zoomDifference = 1)
+        public TileId GetSubTile(int zoomDifference = 1)
         {
-            return new TileId(Coordinates * (int)Math.Pow(2, zoomDifference),
+            return new TileId(new Vector2Int(Coordinates.x << zoomDifference, Coordinates.y << zoomDifference),
                 Zoom + zoomDifference);
         }
 
@@ -54,11 +55,12 @@ namespace GeoViewer.Model.Grid
         /// <returns>An <see cref="IEnumerable{T}"/> containing all sub-tiles</returns>
         public IEnumerable<TileId> GetSubTiles(int zoomDifference = 1)
         {
-            for (var i = 0; i < Math.Pow(2, zoomDifference); i++)
+            var baseCoords = GetSubTile(zoomDifference).Coordinates;
+            for (var i = 0; i < 1 << zoomDifference; i++)
             {
-                for (var j = 0; j < Math.Pow(2, zoomDifference); j++)
+                for (var j = 0; j < 1 << zoomDifference; j++)
                 {
-                    yield return new TileId(Coordinates * (int)Math.Pow(2, zoomDifference) + new Vector2Int(i, j),
+                    yield return new TileId(baseCoords + new Vector2Int(i, j),
                         Zoom + zoomDifference);
                 }
             }
@@ -73,7 +75,7 @@ namespace GeoViewer.Model.Grid
         {
             if (zoomDifference == 0) return this;
             if (zoomDifference < 0) zoomDifference = -zoomDifference;
-            return new TileId(Coordinates / (int)Math.Pow(2, zoomDifference), Zoom - zoomDifference);
+            return new TileId(new Vector2Int(Coordinates.x >> zoomDifference, Coordinates.y >> zoomDifference), Zoom - zoomDifference);
         }
 
         /// <summary>
@@ -119,12 +121,33 @@ namespace GeoViewer.Model.Grid
         }
 
         /// <summary>
+        /// Calculates the matching quadkey for the this tile
+        /// </summary>
+        /// <returns>The quadkey as a string</returns>
+        /// <exception cref="ArgumentException">thrown, if the zoom is 0 (which is not possible to convert)</exception>
+        public string ToQuadKey()
+        {
+            if (Zoom == 0)
+                throw new ArgumentException("Cannot convert tile with zoom 0 to quadkey");
+            StringBuilder builder = new();
+            TileId previousTile = new(new Vector2Int(0, 0), 0);
+            for (int i = 1; i <= Zoom; i++)
+            {
+                var current = GetParentTile(Zoom - i);
+                var relativeCoords = current.Coordinates - previousTile.GetSubTile().Coordinates;
+                builder.Append(relativeCoords.x + 2 * relativeCoords.y);
+                previousTile = current;
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
         /// Checks if the tile coordinates are in bounds
         /// </summary>
         /// <returns><c>true</c>, if the tile coordinates are in bounds, <c>false</c> otherwise</returns>
         public bool IsInbounds()
         {
-            var maxCoord = Math.Pow(2, Zoom);
+            var maxCoord = 1 << Zoom;
             return Coordinates.x < maxCoord && Coordinates.y < maxCoord && Coordinates.x >= 0 && Coordinates.y >= 0;
         }
 

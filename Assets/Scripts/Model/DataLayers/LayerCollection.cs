@@ -82,9 +82,9 @@ namespace GeoViewer.Model.DataLayers
             var currentHighest = _baseLayer;
             foreach (var layer in _layers.Where(layer => layer.Active))
             {
-                if (layer.Priority > currentPriority)
+                if (layer.Settings.Priority > currentPriority)
                 {
-                    currentPriority = layer.Priority;
+                    currentPriority = layer.Settings.Priority;
                     currentHighest = layer;
                 }
             }

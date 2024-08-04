@@ -25,7 +25,7 @@ namespace GeoViewer.Controller.DataLayers
         }
 
         /// <inheritdoc/>
-        public override void RenderData(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
+        protected override void RenderDataInternal(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
             MapRenderer mapRenderer)
         {
             var midpoint =
@@ -34,14 +34,14 @@ namespace GeoViewer.Controller.DataLayers
             var vertices = data.Select(point =>
                 mapRenderer.ApplicationPositionToWorldPosition(mapRenderer.GlobePointToApplicationPosition(point)) -
                 midpoint).ToArray();
-            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), Priority);
+            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), _settings.Priority);
         }
 
         /// <inheritdoc/>
         protected override Task<IReadOnlyList<GlobePoint>> RequestDataInternal(
             (TileId tileId, GlobeArea globeArea) request, CancellationToken token)
         {
-            return Task.FromResult(request.globeArea.GetPointGrid(Settings.MeshResolution));
+            return Task.FromResult(request.globeArea.GetPointGrid(_settings.MeshResolution));
         }
     }
 }

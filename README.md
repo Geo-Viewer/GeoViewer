@@ -59,16 +59,18 @@ Operations can be undone/redone using Ctrl+Z/Ctrl+Y
 
 GeoViewer uses a layer system to display map data, which can be configured in the config file. It differentiates between texture layers, which retrieve images and render them onto the map, and mesh layers, which retrieve height data for an area and display it as a mesh. Currently available are the following layer types:
 
-**OsmTextureLayer**: A texture layer for retrieving image tiles from an Openstreetmap compatible service.
+**OsmTextureLayer**: A texture layer for retrieving image tiles from a service using x, y and zoom for tile idenfication (e.g. Openstreetmaps).
+
+**BingTextureLayer**: A texture layer for retrieving image tiles from a service using quadkeys for tile identification (e.g. Bing maps).
 
 **OtdMeshLayer**: A mesh layer for requesting height data from an Opentopodata compatible service (for example [Google Elevation API](https://developers.google.com/maps/documentation/elevation/start))
 
-**TopoSharp**: A layer for requesting height data from [TopoSharp's](https://github.com/LGK-Productions/TopoSharp) v2 API. This includes being able to request data from the [TopoBathy3D layer](https://www.arcgis.com/home/item.html?id=0c69ba5a5d254118841d43f03aa3e97d) from esri.
+**TopoSharpMeshLayer**: A layer for requesting height data from [TopoSharp's](https://github.com/LGK-Productions/TopoSharp) v2 API. This includes being able to request data from the [TopoBathy3D layer](https://www.arcgis.com/home/item.html?id=0c69ba5a5d254118841d43f03aa3e97d) from esri.
 
-All these layers can be added in the config. Which layer will be rendered will be determined by the layer's priority.
+All these layers can be added in the config. The layer priority determines which layers will be rendered.
 
 ## Contributing
 
-If you have encounter a bug or have any suggestions, feel free to open an issue.
+If you have encountered a bug or have any suggestions, feel free to open an issue.
 
 We're also accepting pull requests, though we ask you to contact us before submitting larger changes to the project in case we have a different vision for it.

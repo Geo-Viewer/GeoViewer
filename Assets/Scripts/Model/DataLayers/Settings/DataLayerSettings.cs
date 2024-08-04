@@ -11,6 +11,7 @@ namespace GeoViewer.Model.DataLayers.Settings
     [JsonSubtypes.KnownSubType(typeof(BaseTextureLayerSettings), "BaseTexture")]
     [JsonSubtypes.KnownSubType(typeof(BaseMeshLayerSettings), "BaseMesh")]
     [JsonSubtypes.KnownSubType(typeof(OsmTextureLayerSettings), "OsmTexture")]
+    [JsonSubtypes.KnownSubType(typeof(BingTextureLayerSettings), "BingTexture")]
     [JsonSubtypes.KnownSubType(typeof(OtdMeshLayerSettings), "OtdMesh")]
     [JsonSubtypes.KnownSubType(typeof(TopoSharpMeshLayerSettings), "TopoSharpMesh")]
     public abstract class DataLayerSettings
@@ -40,7 +41,7 @@ namespace GeoViewer.Model.DataLayers.Settings
         /// <summary>
         /// The amount of request results, the cache can store at once. Only the first results will be cached
         /// </summary>
-        public int CacheSize { get; set; } = 128;
+        public int CacheSize { get; set; } = 0;
 
         /// <summary>
         /// Creates an <see cref="IDataLayer"/> based on this

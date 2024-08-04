@@ -49,6 +49,7 @@ namespace GeoViewer.View.Rendering
         public bool RemovalInProgress { get; private set; }
 
         private float _fadeValue;
+        private bool _fadeIn = true;
         private Material _material = null!;
         private static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
@@ -64,10 +65,12 @@ namespace GeoViewer.View.Rendering
             SetAlpha(1);
         }
 
-        public void Remove()
+        public async void Remove()
         {
             if (RemovalInProgress) return;
             RemovalInProgress = true;
+            await Task.Delay((int)(fadeDuration * 1000));
+            FadeOut();
             Destroy(gameObject, fadeDuration);
         }
 
@@ -87,7 +90,7 @@ namespace GeoViewer.View.Rendering
 
             if (MeshPriority < 0)
             {
-                StartFade();
+                FadeIn();
             }
 
             meshFilter.mesh = mesh;
@@ -149,7 +152,7 @@ namespace GeoViewer.View.Rendering
             var neighbourNormals = neighbourMesh.normals;
 
             var vertexInterval = (uint)Math.Pow(2, zoomDifference);
-            var tilePositionDelta = TileId.Coordinates - neighbour.TileId.GetTopLeftSubTile(zoomDifference).Coordinates;
+            var tilePositionDelta = TileId.Coordinates - neighbour.TileId.GetSubTile(zoomDifference).Coordinates;
 
             for (uint i = 0; i < resolution; i++)
             {
@@ -163,14 +166,15 @@ namespace GeoViewer.View.Rendering
                 var upperVertexIndex = GetEdgeVertex(-direction, (uint)Math.Ceiling(indexValue), resolution, out _);
 
                 var middle = (indexValue - (uint)Math.Floor(indexValue));
-                
+
                 //AdjustHeight
-                var height = neighbourVertices[lowerVertexIndex].y + middle * (neighbourVertices[upperVertexIndex].y - neighbourVertices[lowerVertexIndex].y);
+                var height = neighbourVertices[lowerVertexIndex].y + middle *
+                    (neighbourVertices[upperVertexIndex].y - neighbourVertices[lowerVertexIndex].y);
                 vertices[GetEdgeVertex(direction, i, resolution, out _)].y = height;
-                
+
                 //Adjust Normals
                 var normal = neighbourNormals[lowerVertexIndex] +
-                         middle * (neighbourNormals[upperVertexIndex] - neighbourNormals[lowerVertexIndex]);
+                             middle * (neighbourNormals[upperVertexIndex] - neighbourNormals[lowerVertexIndex]);
                 normals[GetEdgeVertex(direction, i, resolution, out _)] = normal;
             }
 
@@ -225,7 +229,7 @@ namespace GeoViewer.View.Rendering
             if (TexturePriority < 0)
             {
                 meshRenderer.enabled = true;
-                StartFade();
+                FadeIn();
             }
 
             _material.SetTexture(BaseMap, texture);
@@ -264,27 +268,41 @@ namespace GeoViewer.View.Rendering
             _material.SetFloat(Alpha, value);
         }
 
-        private void StartFade()
+        private void FadeIn()
         {
             _material.SetFloat(ZOffsetValue, 5f);
             _fadeValue = 1;
+            _fadeIn = true;
             SetAlpha(0);
+        }
+
+        private void FadeOut()
+        {
+            _fadeValue = 0;
+            _fadeIn = false;
+            SetAlpha(1);
         }
 
         private void Update()
         {
-            if (!(_fadeValue > 0))
+            if (_fadeIn && !(_fadeValue > 0))
+            {
+                return;
+            }
+
+            if (!_fadeIn && !(_fadeValue < 1))
             {
                 return;
             }
 
             if (fadeDuration <= 0)
             {
-                _fadeValue = 0;
+                _fadeValue = _fadeIn ? 0 : 1;
             }
             else
             {
-                _fadeValue -= Time.deltaTime / fadeDuration;
+                var val = Time.deltaTime / fadeDuration;
+                _fadeValue = _fadeIn ? _fadeValue - val : _fadeValue + val;
             }
 
             SetAlpha(1 - _fadeValue);

@@ -11,7 +11,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The settings version.
         /// </summary>
-        public const int SettingsVersion = 3;
+        public const int SettingsVersion = 4;
 
         /// <summary>
         /// If this doesn't match the settings version, we create a backup of it and reset the config.
@@ -19,14 +19,29 @@ namespace GeoViewer.Model.State
         public int ConfigVersion { get; set; } = SettingsVersion;
 
         /// <summary>
-        /// The factor for multiplying the resolution of the terrain 
+        /// The factor for multiplying the resolution of the terrain
         /// </summary>
         public int ResolutionMultiplier { get; set; } = 1;
 
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
         /// </summary>
-        public float RequestRadiusMultiplier { get; set; } = 12f;
+        public float RequestRadiusMultiplier { get; set; } = 3f;
+
+        /// <summary>
+        /// The minimal size of the displayed map in metres
+        /// </summary>
+        public float MinMapSize { get; set; } = 500f;
+
+        /// <summary>
+        /// Whether Frustum Culling for map tiles should be used
+        /// </summary>
+        public bool EnableTileCulling { get; set; } = true;
+
+        /// <summary>
+        /// The strength of the frustum culling
+        /// </summary>
+        public float CullingAngle { get; set; } = 90f;
 
         /// <summary>
         /// A list of all data layers

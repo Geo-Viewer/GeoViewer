@@ -39,6 +39,8 @@ namespace GeoViewer.Model.Globe
         public GlobePoint SouthEastPoint => new(BoundsLat.Min, BoundsLon.Max);
         public GlobePoint SouthWestPoint => new(BoundsLat.Min, BoundsLon.Min);
 
+        public IEnumerable<GlobePoint> Points => GetCorners();
+
         /// <summary>
         /// Creates a new <see cref="GlobeArea"/> with the given bounds.
         /// </summary>
@@ -128,6 +130,14 @@ namespace GeoViewer.Model.Globe
             var lon = Math.Clamp(globePoint.Longitude, BoundsLon.Min, BoundsLon.Max);
 
             return new GlobePoint(lat, lon);
+        }
+
+        private IEnumerable<GlobePoint> GetCorners()
+        {
+            yield return NorthEastPoint;
+            yield return SouthEastPoint;
+            yield return SouthWestPoint;
+            yield return NorthWestPoint;
         }
 
         /// <summary>

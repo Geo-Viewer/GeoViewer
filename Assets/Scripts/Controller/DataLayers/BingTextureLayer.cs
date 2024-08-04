@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,13 +13,11 @@ using UnityEngine;
 namespace GeoViewer.Controller.DataLayers
 {
     /// <summary>
-    /// A texture layer for requesting and rendering textures based on Osm-format
+    /// A texture layer for requesting and rendering textures based on Bing Format (QuadKey)
     /// </summary>
-    public class OsmTextureLayer : DataLayer<OsmTextureLayerSettings, Texture2D>, ITextureLayer
+    public class BingTextureLayer : DataLayer<BingTextureLayerSettings, Texture2D>, ITextureLayer
     {
-        public const string ZoomIdentifier = "zoom";
-        public const string XCordIdentifier = "x";
-        public const string YCordIdentifier = "y";
+        public const string QuadKeyIdentifier = "quadkey";
 
         public SegmentationSettings SegmentationSettings => _settings.SegmentationSettings;
 
@@ -32,7 +30,7 @@ namespace GeoViewer.Controller.DataLayers
         /// Creates a new instance of the <see cref="OsmTextureLayer"/> class.
         /// </summary>
         /// <param name="settings">The settings for the <see cref="OsmTextureLayer"/></param>
-        public OsmTextureLayer(OsmTextureLayerSettings settings) : base(settings)
+        public BingTextureLayer(BingTextureLayerSettings settings) : base(settings)
         {
         }
 
@@ -48,9 +46,7 @@ namespace GeoViewer.Controller.DataLayers
         {
             var url = StringFormatter.FormatString(_settings.Url, tag => tag.ToString().ToLower() switch
             {
-                ZoomIdentifier => request.tileId.Zoom.ToString(),
-                XCordIdentifier => request.tileId.Coordinates.x,
-                YCordIdentifier => request.tileId.Coordinates.y,
+                QuadKeyIdentifier => request.tileId.ToQuadKey(),
                 _ => null
             });
 

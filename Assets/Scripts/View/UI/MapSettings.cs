@@ -29,7 +29,7 @@ namespace GeoViewer.View.UI
             _buttonImage = root.Q("3D-Icon");
 
             //actions which take place when one of the buttons is pressed
-            _centerButton!.clicked += () => GetController().ResetCameraToOrigin();
+            _centerButton!.clicked += () => GetController().ResetCamera();
             _gizmoButton!.clicked += () => GetController().ToggleRotationCenter();
             _3dButton!.clicked += () => GetController().ToggleRenderHeightData();
             ApplicationState.Instance.LayerManager.CurrentLayerChanged += (_) => SetCorrect3DButtonMode(ApplicationState.Instance.LayerManager.GetLayersActive(typeof(IMeshLayer)));

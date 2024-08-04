@@ -127,11 +127,13 @@ namespace GeoViewer.Controller.UI
         /// <summary>
         /// Calls a method which sets the rotation center to the origin.
         /// </summary>
-        public void ResetCameraToOrigin()
+        public void ResetCamera(bool resetToObject = true)
         {
             if (ApplicationState.Instance.Camera != null)
             {
-                ApplicationState.Instance.Camera.GetComponent<CameraController>().ResetPosition(true);
+                if (resetToObject && ObjLoader.LoadedObject != null)
+                    ApplicationState.Instance.MapRenderer.MoveOrigin(ObjLoader.LoadedObject.transform);
+                ApplicationState.Instance.Camera.GetComponent<CameraController>().SetPosition(Vector3.zero);
             }
         }
 
@@ -147,13 +149,17 @@ namespace GeoViewer.Controller.UI
             ApplicationState.Instance.CommandHandler.Clear();
             ApplicationState.Instance.MapRenderer.ClearMap();
 
+            if (result.Response?.GlobePoint != null)
+            {
+                ApplicationState.Instance.MapRenderer.MoveOrigin(result.Response.GlobePoint);
+            }
+            ResetCamera(false);
+
             //Create and show map
             if (result.Response?.GlobePoint != null)
             {
-                ApplicationState.Instance.MapRenderer.BuildMap(result.Response.GlobePoint);
+                ApplicationState.Instance.MapRenderer.UpdateMap();
             }
-
-            ResetCameraToOrigin();
 
             //show coordinate display
             _informationBox.SetVisible(result.Response?.GlobePoint != null);

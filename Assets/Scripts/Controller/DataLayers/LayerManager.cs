@@ -147,6 +147,12 @@ namespace GeoViewer.Controller.DataLayers
             throw new ArgumentException("Unknown layer type");
         }
 
+        public void PrintStatistics()
+        {
+            Debug.Log($"{_textureLayers.Current.Settings.Name}:{_textureLayers.Current.Analytics}");
+            Debug.Log($"{_meshLayers.Current.Settings.Name}:{_meshLayers.Current.Analytics}");
+        }
+
         private async void OnCurrentLayerChanged(IDataLayer layer)
         {
             await UniTask.SwitchToMainThread();

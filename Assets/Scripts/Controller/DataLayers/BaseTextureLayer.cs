@@ -16,7 +16,7 @@ namespace GeoViewer.Controller.DataLayers
     {
         private Texture2D? _baseTexture;
 
-        public SegmentationSettings SegmentationSettings => Settings.SegmentationSettings;
+        public SegmentationSettings SegmentationSettings => _settings.SegmentationSettings;
 
         /// <summary>
         /// Creates a new Instance of the <see cref="BaseTextureLayer"/> class.
@@ -27,9 +27,9 @@ namespace GeoViewer.Controller.DataLayers
         }
 
         /// <inheritdoc/>
-        public override void RenderData(Texture2D data, TileGameObject tileGameObject, MapRenderer mapRenderer)
+        protected override void RenderDataInternal(Texture2D data, TileGameObject tileGameObject, MapRenderer mapRenderer)
         {
-            tileGameObject.SetTexture(data, Priority);
+            tileGameObject.SetTexture(data, _settings.Priority);
         }
 
         /// <inheritdoc/>
@@ -52,9 +52,9 @@ namespace GeoViewer.Controller.DataLayers
             _baseTexture = new Texture2D(1, 1)
             {
                 name = "TileBaseTexture",
-                filterMode = Settings.FilterMode
+                filterMode = _settings.FilterMode
             };
-            _baseTexture.LoadImage(File.ReadAllBytes(Settings.TexturePath));
+            _baseTexture.LoadImage(File.ReadAllBytes(_settings.TexturePath));
         }
     }
 }
