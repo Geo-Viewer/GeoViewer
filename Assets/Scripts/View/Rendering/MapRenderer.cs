@@ -37,19 +37,9 @@ namespace GeoViewer.View.Rendering
         private const int TerrainLayer = 6;
 
         /// <summary>
-        /// The maximum distance of the target from the rotation center (if greater map is scaled down)
+        /// Target distance of the camera to rotation center
         /// </summary>
-        private const float MaxTargetDistance = 100f;
-
-        /// <summary>
-        /// The minimum distance of the target from the rotation center (if smaller map is scaled up)
-        /// </summary>
-        private const float MinTargetDistance = 50f;
-
-        /// <summary>
-        /// The maximum distance of the rotation center from (0, 0, 0) (if grater origin is moved)
-        /// </summary>
-        private const float MaxRotationCenterDistance = 100f;
+        private const float TargetCamDistance = 200f;
 
         /// <summary>
         /// The minimum tile count of the map
@@ -70,7 +60,7 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public GlobePoint Origin { get; private set; } = new(49.011622, 8.416714, 120);
 
-        private double3 _originPosition = new(936944.30060395563, 183, 6276834.0088540893);
+        private double3 _originPosition;
         public double CurrentWorldScale { get; private set; } = 1f;
 
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
@@ -108,6 +98,8 @@ namespace GeoViewer.View.Rendering
             _layerManager = layerManager;
             _layerManager.CurrentLayerChanged += (layer) => ClearMap(layer);
             ApplicationState.OnRotationCenterChanged += RotationCenterChanged;
+
+            SetOrigin(Origin);
         }
 
         #region Map Building
@@ -488,40 +480,40 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Scales the map according to the distance to the target and adjusts the origin based on the rotation center position
         /// </summary>
-        private void AdjustWorldScaleAndPosition()
+        public void AdjustWorldScaleAndPosition()
         {
-            if (Vector3.Distance(RotationCenter!.position, Vector3.zero) >
-                MaxRotationCenterDistance)
-            {
-                MoveOrigin(RotationCenter.position);
-            }
+            if (RotationCenter == null) return;
+            MoveOrigin(RotationCenter.position);
 
-            const float targetDistance = MinTargetDistance + (MaxTargetDistance - MinTargetDistance) / 2;
             var distance = Vector3.Distance(Camera!.position, RotationCenter.position);
-            if (distance > MaxTargetDistance || (distance < MinTargetDistance && _mapParent.transform.localScale.x < 1))
-            {
-                CurrentWorldScale *= targetDistance / distance;
-                _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
-            }
+            CurrentWorldScale *= TargetCamDistance / distance;
+            _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
         }
 
         /// <summary>
-        /// Sets the new origin to a given <paramref name="globePoint"/>
+        /// Sets the origin values to a given GlobePoint
+        /// </summary>
+        /// <param name="globePoint">The globe point to set the origin to</param>
+        private void SetOrigin(GlobePoint globePoint)
+        {
+            Origin = globePoint;
+            _originPosition = ViewProjection.GlobePointToPosition(globePoint);
+        }
+
+        /// <summary>
+        /// Sets the new origin to a given <paramref name="globePoint"/> and moves all map objects accordingly
         /// </summary>
         /// <param name="globePoint">The <see cref="GlobePoint"/> to set the origin to</param>
         public void MoveOrigin(GlobePoint globePoint)
         {
-            Origin = globePoint;
-            var newOriginPosition = ViewProjection.GlobePointToPosition(globePoint);
-
-            var delta = WorldPositionToApplicationPosition(newOriginPosition) -
-                        WorldPositionToApplicationPosition(_originPosition);
+            var oldOriginPosition = _originPosition;
+            SetOrigin(globePoint);
+            var delta = WorldPositionToApplicationPosition(_originPosition) -
+                        WorldPositionToApplicationPosition(oldOriginPosition);
             foreach (Transform transform in _mapParent.transform)
             {
                 transform.position -= delta;
             }
-
-            _originPosition = newOriginPosition;
         }
 
         /// <summary>

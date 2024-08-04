@@ -23,6 +23,7 @@ namespace GeoViewer.View.Rendering
 
         private void LateUpdate()
         {
+            mapRenderer.AdjustWorldScaleAndPosition();
             _timer += Time.deltaTime;
             if (_timer < updateTimer)
             {
