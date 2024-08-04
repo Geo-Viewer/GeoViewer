@@ -13,6 +13,7 @@ using GeoViewer.Model.Grid;
 using GeoViewer.Model.State;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using Object = UnityEngine.Object;
 
 namespace GeoViewer.View.Rendering
@@ -74,6 +75,7 @@ namespace GeoViewer.View.Rendering
         private readonly TileGameObject _tilePrefab;
         private readonly Transform _mapParent;
         private readonly LayerManager _layerManager;
+        private ApplicationSettings Settings { get; }
 
         private HashSet<TileId> _currentSegmentation = new();
 
@@ -91,15 +93,18 @@ namespace GeoViewer.View.Rendering
         /// Creates a new <see cref="MapRenderer"/> for a given <paramref name="layerManager"/>
         /// </summary>
         /// <param name="layerManager">The layer manager to be used</param>
-        public MapRenderer(LayerManager layerManager)
+        /// <param name="settings">current Application settings</param>
+        public MapRenderer(LayerManager layerManager, ApplicationSettings settings)
         {
             _mapParent = new GameObject("Map").transform;
             _tilePrefab = Resources.Load<TileGameObject>("TilePrefab");
             _layerManager = layerManager;
+            Settings = settings;
             _layerManager.CurrentLayerChanged += (layer) => ClearMap(layer);
             ApplicationState.OnRotationCenterChanged += RotationCenterChanged;
 
             SetOrigin(Origin);
+            AdjustFog();
         }
 
         #region Map Building
@@ -122,7 +127,7 @@ namespace GeoViewer.View.Rendering
             CurrentRequestArea = GetRequestArea();
             _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
 
-            if (ApplicationState.Instance.Settings.EnableTileCulling)
+            if (Settings.EnableTileCulling)
                 _currentSegmentation = ApplyCulling(_currentSegmentation);
 
             //Collect all tasks we have to wait for
@@ -232,10 +237,10 @@ namespace GeoViewer.View.Rendering
         {
             var middle = ResampleHeight(RotationCenter!.transform.position);
             var vec = middle - Camera!.position;
-            var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
+            var multiplier = Settings.MapSizeMultiplier;
             var distance = Math.Max(Math.Max(
                 Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
-                Math.Abs(vec.y) / CurrentWorldScale) * multiplier, ApplicationState.Instance.Settings.MinMapSize);
+                Math.Abs(vec.y) / CurrentWorldScale) * multiplier, Settings.MinMapSize);
 
             var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
             var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
@@ -290,7 +295,7 @@ namespace GeoViewer.View.Rendering
                                                         intersectionPoint,
                     Vector3.up);
                 return Vector3.Angle(cameraForward, tileVector) <=
-                       ApplicationState.Instance.Settings.CullingAngle;
+                       Settings.CullingAngle;
             }
         }
 
@@ -453,7 +458,7 @@ namespace GeoViewer.View.Rendering
                 ApplicationPositionToWorldPosition(Camera!.position));
 
             var log = Math.Log(
-                distance / (Zoom19Distance * ApplicationState.Instance.Settings.ResolutionMultiplier *
+                distance / (Zoom19Distance * Settings.ResolutionMultiplier *
                             CurrentSegmentationSettings.ResolutionMultiplier), 2);
             var roundedLog = log < 0 ? (int)log - 1 : (int)log;
             var targetZoom = 18 - roundedLog;
@@ -605,6 +610,14 @@ namespace GeoViewer.View.Rendering
                     tileObj.AdjustRenderingOrder(delayed);
                 }
             }
+        }
+
+        private void AdjustFog()
+        {
+            var renderAsset = Resources.Load<UniversalRendererData>("HighFidelity_Fog");
+            var rendererFeature = (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
+            var maxDistance = TargetCamDistance * Settings.MapSizeMultiplier;
+            rendererFeature.passMaterial.SetVector("_Fade_Start_End", new Vector4(maxDistance / 4, maxDistance));
         }
 
         /// <summary>

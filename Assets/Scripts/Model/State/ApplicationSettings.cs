@@ -26,7 +26,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
         /// </summary>
-        public float RequestRadiusMultiplier { get; set; } = 3f;
+        public float MapSizeMultiplier { get; set; } = 3f;
 
         /// <summary>
         /// The minimal size of the displayed map in metres

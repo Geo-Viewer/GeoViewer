@@ -30,7 +30,7 @@ namespace GeoViewer.Model.State
         {
             Settings = ConfigLoader.GetSettingsFromConfig();
             LayerManager = new LayerManager(Settings.DataLayers);
-            MapRenderer = new MapRenderer(LayerManager);
+            MapRenderer = new MapRenderer(LayerManager, Settings);
         }
 
         #endregion Singleton
