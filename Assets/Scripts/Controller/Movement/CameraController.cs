@@ -33,6 +33,11 @@ namespace GeoViewer.Controller.Movement
 
         private float _rotationY;
 
+        private void Awake()
+        {
+            ApplicationState.Instance.Camera = GetComponent<Camera>();
+        }
+
         private void Update()
         {
             // if the rotation center isn't set, we can't move the camera
@@ -58,8 +63,6 @@ namespace GeoViewer.Controller.Movement
 
         private void Start()
         {
-            ApplicationState.Instance.Camera = GetComponent<Camera>();
-
             _inputs = ApplicationState.Instance.Inputs;
 
             // set the initial camera transform

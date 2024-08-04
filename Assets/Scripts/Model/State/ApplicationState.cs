@@ -26,24 +26,18 @@ namespace GeoViewer.Model.State
         /// </summary>
         public static ApplicationState Instance => _instance ??= new ApplicationState();
 
-        /// <summary>
-        /// The current layer manager of the application
-        /// </summary>
-        public LayerManager LayerManager { get; private set; }
-
-        /// <summary>
-        /// The current map renderer of the application
-        /// </summary>
-        public MapRenderer MapRenderer { get; private set; }
-
-        private bool _rotationCenterVisible = true;
-
         private ApplicationState()
         {
             Settings = ConfigLoader.GetSettingsFromConfig();
             LayerManager = new LayerManager(Settings.DataLayers);
             MapRenderer = new MapRenderer(LayerManager);
         }
+
+        #endregion Singleton
+
+        #region Rotation Center Visibility
+
+        private bool _rotationCenterVisible = true;
 
         /// <summary>
         /// Indicates whether the rotation center is visible or invisible.
@@ -82,16 +76,11 @@ namespace GeoViewer.Model.State
         }
 
         /// <summary>
-        /// A reference to the rotation center game object.
-        /// </summary>
-        public GameObject? RotationCenter { get; set; }
-
-        /// <summary>
         /// An event which is raised when the rotation center changes its visibility.
         /// </summary>
         public event EventHandler<RotationCenterVisibilityChangedEventArgs>? RotationCenterVisibilityChangedEvent;
 
-        #endregion RotationCenter
+        #endregion Rotation Center Visibility
 
         #region Tools
 
@@ -152,19 +141,73 @@ namespace GeoViewer.Model.State
 
         #endregion Tools
 
+        #region References
+
+        /// <summary>
+        /// The current layer manager of the application
+        /// </summary>
+        public LayerManager LayerManager { get; }
+
+        /// <summary>
+        /// The current map renderer of the application
+        /// </summary>
+        public MapRenderer MapRenderer { get; }
+
+        private Camera? _camera;
+
         /// <summary>
         /// A reference to the active camera.
         /// If null, no camera is rendering at the moment.
         /// </summary>
-        public Camera? Camera { get; set; }
+        public Camera? Camera
+        {
+            get => _camera;
+            set
+            {
+                if (value == _camera) return;
+                _camera = value;
+                OnCameraChanged?.Invoke(value);
+            }
+        }
+
+        private GameObject? _rotationCenter;
+
+        /// <summary>
+        /// A reference to the rotation center game object.
+        /// </summary>
+        public GameObject? RotationCenter
+        {
+            get => _rotationCenter;
+            set
+            {
+                if (value == _rotationCenter) return;
+                _rotationCenter = value;
+                OnRotationCenterChanged?.Invoke(value);
+            }
+        }
 
         /// <summary>
         /// User settings loaded from the json file stored in the application's data directory.
         /// </summary>
         public ApplicationSettings Settings { get; }
 
+        /// <summary>
+        /// A reference to the input handling script
+        /// </summary>
         public Inputs Inputs { get; } = new(new InputManager());
 
+        /// <summary>
+        /// A reference to the active command handler
+        /// </summary>
         public CommandHandler CommandHandler { get; } = new();
+
+        #endregion References
+
+        #region Change Events
+
+        public static event Action<GameObject?>? OnRotationCenterChanged;
+        public static event Action<Camera?>? OnCameraChanged;
+
+        #endregion Change Events
     }
 }
