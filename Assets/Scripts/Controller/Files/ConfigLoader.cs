@@ -45,7 +45,7 @@ namespace GeoViewer.Controller.Files
                 {
                     Debug.LogWarning($"There is no file at {ConfigPath}. Creating default config.");
                     // create new default ConfigFile in Json format at ConfigPath
-                    SaveDefaultConfig();
+                    SaveConfig(new ApplicationSettings());
                 }
 
                 var str = File.ReadAllText(ConfigPath);
@@ -54,14 +54,25 @@ namespace GeoViewer.Controller.Files
                     ObjectCreationHandling = ObjectCreationHandling.Replace
                 });
 
-                // check config version
-                if (settings!.ConfigVersion == ApplicationSettings.SettingsVersion)
+                switch (settings!.ConfigVersion)
                 {
-                    return settings;
+                    // check config version
+                    case < ApplicationSettings.SettingsVersion:
+                        Debug.Log(
+                            $"Switching from config version {settings.ConfigVersion} to config version {ApplicationSettings.SettingsVersion}");
+
+                        settings!.ConfigVersion = ApplicationSettings.SettingsVersion;
+
+                        BackupConfig();
+                        SaveConfig(settings);
+                        break;
+                    case > ApplicationSettings.SettingsVersion:
+                        Debug.LogWarning(
+                            $"Saved Config Version ({settings!.ConfigVersion}) is higher than current version ({ApplicationSettings.SettingsVersion})");
+                        break;
                 }
 
-                BackupConfig();
-                SaveDefaultConfig();
+                return settings;
             }
             catch (IOException e)
             {
@@ -87,13 +98,15 @@ namespace GeoViewer.Controller.Files
             File.Move(ConfigPath, OldConfigPath);
         }
 
-        private static void SaveDefaultConfig()
-        {
-            SaveConfig(new ApplicationSettings());
-        }
-
         private static void SaveConfig(ApplicationSettings settings)
         {
+            if (settings.ConfigVersion > ApplicationSettings.SettingsVersion)
+            {
+                Debug.LogWarning(
+                    $"Prevented Config with version {settings.ConfigVersion} from being saved, due to config version being higher than current settings version");
+                return;
+            }
+
             var dir = Path.GetDirectoryName(ConfigPath);
             if (!Directory.Exists(dir) && dir != null)
             {
