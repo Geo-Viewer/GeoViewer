@@ -228,7 +228,7 @@ namespace GeoViewer.Model.State
                 (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
             rendererFeature.SetActive(Settings.EnableDistanceFog);
             var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier;
-            rendererFeature.passMaterial.SetVector(FadeStartEnd, new Vector4(maxDistance * 2/4, maxDistance));
+            rendererFeature.passMaterial.SetVector(FadeStartEnd, new Vector4(maxDistance * 2/4, maxDistance + MapRenderer.TargetCamDistance));
         }
 
         #endregion Graphic Settings
