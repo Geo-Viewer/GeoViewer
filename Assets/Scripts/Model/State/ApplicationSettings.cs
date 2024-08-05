@@ -11,7 +11,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The settings version.
         /// </summary>
-        public const int SettingsVersion = 4;
+        public const int SettingsVersion = 5;
 
         /// <summary>
         /// If this doesn't match the settings version, we create a backup of it and reset the config.
@@ -43,10 +43,29 @@ namespace GeoViewer.Model.State
         /// </summary>
         public float CullingAngle { get; set; } = 90f;
 
+        #region Graphics
+
         /// <summary>
         /// Whether distance fog should be used to hide map edge
         /// </summary>
         public bool EnableDistanceFog { get; set; } = true;
+
+        /// <summary>
+        /// Whether Post Processing should be enabled
+        /// </summary>
+        public bool EnablePostProcessing { get; set; } = true;
+
+        /// <summary>
+        /// Whether VSync should be enabled
+        /// </summary>
+        public bool EnableVSync { get; set; } = true;
+
+        /// <summary>
+        /// The framerate target for the Application
+        /// </summary>
+        public int TargetFrameRate { get; set; } = 120;
+
+        #endregion Graphics
 
         /// <summary>
         /// A list of all data layers

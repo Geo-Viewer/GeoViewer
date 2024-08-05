@@ -9,7 +9,9 @@ using GeoViewer.Model.State.Events;
 using GeoViewer.Model.Tools.Mode;
 using GeoViewer.View.Rendering;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using Object = UnityEngine.Object;
 
 namespace GeoViewer.Model.State
 {
@@ -214,21 +216,35 @@ namespace GeoViewer.Model.State
 
         #region Graphic Settings
 
+        private Volume? _postProcessVolume;
+
         private void ReloadGraphicSettings()
         {
-            AdjustFog();
+            var renderAsset = Resources.Load<UniversalRendererData>("HighFidelity_Fog");
+            AdjustFog(renderAsset);
+
+            QualitySettings.vSyncCount = Settings.EnableVSync ? 1 : 0;
+            if (!Settings.EnableVSync)
+                Application.targetFrameRate = Settings.TargetFrameRate;
+
+            if (_postProcessVolume == null)
+            {
+                _postProcessVolume = Object.Instantiate(Resources.Load<Volume>("Global Volume"));
+            }
+
+            _postProcessVolume.enabled = Settings.EnablePostProcessing;
         }
 
         private static readonly int FadeStartEnd = Shader.PropertyToID("_Fade_Start_End");
 
-        private void AdjustFog()
+        private void AdjustFog(UniversalRendererData renderAsset)
         {
-            var renderAsset = Resources.Load<UniversalRendererData>("HighFidelity_Fog");
             var rendererFeature =
                 (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
             rendererFeature.SetActive(Settings.EnableDistanceFog);
             var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier;
-            rendererFeature.passMaterial.SetVector(FadeStartEnd, new Vector4(maxDistance * 2/4, maxDistance + MapRenderer.TargetCamDistance));
+            rendererFeature.passMaterial.SetVector(FadeStartEnd,
+                new Vector4(maxDistance * 2 / 4, maxDistance + MapRenderer.TargetCamDistance));
         }
 
         #endregion Graphic Settings
