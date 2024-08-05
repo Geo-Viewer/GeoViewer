@@ -27,6 +27,8 @@ namespace GeoViewer.View.Rendering
 
         [SerializeField] private float fadeDuration;
 
+        private const float ZOffsetMultiplier = 0.2f;
+
         #endregion Settings
 
         #region Fields
@@ -257,7 +259,7 @@ namespace GeoViewer.View.Rendering
             }
             else
             {
-                _material.SetFloat(ZOffsetValue, _material.GetFloat(ZOffsetValue) - 1f);
+                _material.SetFloat(ZOffsetValue, _material.GetFloat(ZOffsetValue) - 1f * ZOffsetValue);
             }
         }
 
@@ -270,7 +272,7 @@ namespace GeoViewer.View.Rendering
 
         private void FadeIn()
         {
-            _material.SetFloat(ZOffsetValue, 5f);
+            _material.SetFloat(ZOffsetValue, 5f * ZOffsetMultiplier);
             _fadeValue = 1;
             _fadeIn = true;
             SetAlpha(0);
@@ -278,6 +280,7 @@ namespace GeoViewer.View.Rendering
 
         private void FadeOut()
         {
+            _material.SetFloat(ZOffsetValue, -5f * ZOffsetMultiplier);
             _fadeValue = 0;
             _fadeIn = false;
             SetAlpha(1);
