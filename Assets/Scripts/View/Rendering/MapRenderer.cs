@@ -13,7 +13,6 @@ using GeoViewer.Model.Grid;
 using GeoViewer.Model.State;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using Object = UnityEngine.Object;
 
 namespace GeoViewer.View.Rendering
@@ -40,7 +39,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Target distance of the camera to rotation center
         /// </summary>
-        private const float TargetCamDistance = 200f;
+        public const float TargetCamDistance = 100f;
 
         /// <summary>
         /// The minimum tile count of the map
@@ -104,7 +103,6 @@ namespace GeoViewer.View.Rendering
             ApplicationState.OnRotationCenterChanged += RotationCenterChanged;
 
             SetOrigin(Origin);
-            AdjustFog();
         }
 
         #region Map Building
@@ -547,9 +545,9 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Gets called when the rotation center changes. This attaches the new Rotation center to the map
         /// </summary>
-        /// <param name="newRotationCenter">The newly set rotationCenter</param>
-        private void RotationCenterChanged(GameObject? newRotationCenter)
+        private void RotationCenterChanged()
         {
+            var newRotationCenter = ApplicationState.Instance.RotationCenter;
             if (newRotationCenter == null) return;
             AttachToMap(newRotationCenter.transform);
         }
@@ -610,14 +608,6 @@ namespace GeoViewer.View.Rendering
                     tileObj.AdjustRenderingOrder(delayed);
                 }
             }
-        }
-
-        private void AdjustFog()
-        {
-            var renderAsset = Resources.Load<UniversalRendererData>("HighFidelity_Fog");
-            var rendererFeature = (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
-            var maxDistance = TargetCamDistance * Settings.MapSizeMultiplier;
-            rendererFeature.passMaterial.SetVector("_Fade_Start_End", new Vector4(maxDistance / 4, maxDistance));
         }
 
         /// <summary>

@@ -44,6 +44,11 @@ namespace GeoViewer.Model.State
         public float CullingAngle { get; set; } = 90f;
 
         /// <summary>
+        /// Whether distance fog should be used to hide map edge
+        /// </summary>
+        public bool EnableDistanceFog { get; set; } = true;
+
+        /// <summary>
         /// A list of all data layers
         /// </summary>
         public List<DataLayerSettings> DataLayers { get; set; } = new() { new OsmTextureLayerSettings() };
