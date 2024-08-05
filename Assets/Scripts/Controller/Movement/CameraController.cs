@@ -36,6 +36,7 @@ namespace GeoViewer.Controller.Movement
         private void Awake()
         {
             ApplicationState.Instance.Camera = GetComponent<Camera>();
+            ApplicationState.Instance.Camera.fieldOfView = ApplicationState.Instance.Settings.CameraFov;
         }
 
         private void Update()

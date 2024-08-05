@@ -43,6 +43,11 @@ namespace GeoViewer.Model.State
         /// </summary>
         public float CullingAngle { get; set; } = 90f;
 
+        /// <summary>
+        /// Fov of the main camera
+        /// </summary>
+        public float CameraFov { get; set; } = 60;
+
         #region Graphics
 
         /// <summary>

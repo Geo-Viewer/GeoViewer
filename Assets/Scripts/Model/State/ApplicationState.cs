@@ -236,15 +236,18 @@ namespace GeoViewer.Model.State
         }
 
         private static readonly int FadeStartEnd = Shader.PropertyToID("_Fade_Start_End");
+        private static readonly int Fov = Shader.PropertyToID("_Fov");
 
         private void AdjustFog(UniversalRendererData renderAsset)
         {
             var rendererFeature =
                 (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
             rendererFeature.SetActive(Settings.EnableDistanceFog);
-            var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier;
+            var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier + MapRenderer.TargetCamDistance / 2;
             rendererFeature.passMaterial.SetVector(FadeStartEnd,
-                new Vector4(maxDistance * 2 / 4, maxDistance + MapRenderer.TargetCamDistance));
+                new Vector4(maxDistance * 2 / 4, maxDistance));
+
+            rendererFeature.passMaterial.SetFloat(Fov, Settings.CameraFov);
         }
 
         #endregion Graphic Settings

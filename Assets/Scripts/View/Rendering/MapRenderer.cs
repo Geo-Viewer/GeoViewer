@@ -120,8 +120,6 @@ namespace GeoViewer.View.Rendering
         {
             if (Camera == null || RotationCenter == null) return;
 
-            AdjustWorldScaleAndPosition();
-
             CurrentRequestArea = GetRequestArea();
             _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
 
@@ -151,15 +149,13 @@ namespace GeoViewer.View.Rendering
                 {
                     var task = await Task.WhenAny(tasksToAwait);
                     tasksToAwait.Remove(task);
-                    if (task == tcs.Task)
-                    {
-                        var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToArray();
-                        CancelRequests(toCancel);
-                        AdjustRenderingOrder(toCancel, false);
-                        return;
-                    }
 
-                    //await task;
+                    if (task != tcs.Task) continue;
+
+                    var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    CancelRequests(toCancel);
+                    AdjustRenderingOrder(toCancel, false);
+                    return;
                 }
                 catch (LayerFailedException)
                 {
@@ -175,7 +171,7 @@ namespace GeoViewer.View.Rendering
             AdjustRenderingOrder(requestIds);
         }
 
-        private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out List<TileId> requestIds)
+        private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out HashSet<TileId> requestIds)
         {
             requestIds = new();
             var tasksToAwait = new List<Task>
