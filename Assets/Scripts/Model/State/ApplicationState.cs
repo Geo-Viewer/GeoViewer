@@ -247,7 +247,9 @@ namespace GeoViewer.Model.State
             rendererFeature.passMaterial.SetVector(FadeStartEnd,
                 new Vector4(maxDistance * 2 / 4, maxDistance));
 
-            rendererFeature.passMaterial.SetFloat(Fov, Settings.CameraFov);
+            var horizontalFov =
+                Camera.VerticalToHorizontalFieldOfView(Settings.CameraFov, (float)Screen.width / Screen.height);
+            rendererFeature.passMaterial.SetFloat(Fov, horizontalFov);
         }
 
         #endregion Graphic Settings
