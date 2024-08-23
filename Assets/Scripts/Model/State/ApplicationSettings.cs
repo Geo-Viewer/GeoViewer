@@ -26,12 +26,12 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
         /// </summary>
-        public float MapSizeMultiplier { get; set; } = 3f;
+        public float MapSizeMultiplier { get; set; } = 4f;
 
         /// <summary>
         /// The minimal size of the displayed map in metres
         /// </summary>
-        public float MinMapSize { get; set; } = 500f;
+        public float MinMapSize { get; set; } = 1000f;
 
         /// <summary>
         /// Whether Frustum Culling for map tiles should be used

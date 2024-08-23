@@ -484,8 +484,15 @@ namespace GeoViewer.View.Rendering
             if (RotationCenter == null) return;
             MoveOrigin(RotationCenter.position);
 
-            var distance = Vector3.Distance(Camera!.position, RotationCenter.position);
-            CurrentWorldScale *= TargetCamDistance / distance;
+            var distance = (Vector3.Distance(Camera!.position, RotationCenter.position));
+            if (Settings.MinMapSize / Settings.MapSizeMultiplier > distance / CurrentWorldScale)
+            {
+                CurrentWorldScale = TargetCamDistance / (Settings.MinMapSize / Settings.MapSizeMultiplier);
+            }
+            else
+            {
+                CurrentWorldScale = TargetCamDistance / (distance / CurrentWorldScale);
+            }
             _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
         }
 

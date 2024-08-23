@@ -118,6 +118,7 @@ namespace GeoViewer.View.Rendering
             {
                 Debug.Log($"Neighbour: {neighbour.tileGameObject.TileId} in  {neighbour.direction}");
             }
+            AdjustRenderingOrder(false);
         }
 
         [Button]
@@ -254,12 +255,13 @@ namespace GeoViewer.View.Rendering
         {
             if (delayed)
             {
-                await Task.Delay((int)(fadeDuration * 1000));
+                await Task.Delay((int)(fadeDuration * 2 * 1000));
                 _material.SetFloat(ZOffsetValue, 0f);
             }
             else
             {
-                _material.SetFloat(ZOffsetValue, _material.GetFloat(ZOffsetValue) - 1f * ZOffsetValue);
+                var offset = _material.GetFloat(ZOffsetValue);
+                _material.SetFloat(ZOffsetValue, offset - 1f * ZOffsetValue);
             }
         }
 
@@ -280,7 +282,6 @@ namespace GeoViewer.View.Rendering
 
         private void FadeOut()
         {
-            _material.SetFloat(ZOffsetValue, -5f * ZOffsetMultiplier);
             _fadeValue = 0;
             _fadeIn = false;
             SetAlpha(1);

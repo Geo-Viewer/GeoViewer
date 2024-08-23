@@ -245,7 +245,7 @@ namespace GeoViewer.Model.State
             rendererFeature.SetActive(Settings.EnableDistanceFog);
             var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier + MapRenderer.TargetCamDistance / 2;
             rendererFeature.passMaterial.SetVector(FadeStartEnd,
-                new Vector4(maxDistance * 2 / 4, maxDistance));
+                new Vector4(maxDistance * 2 / 3, maxDistance));
 
             var horizontalFov =
                 Camera.VerticalToHorizontalFieldOfView(Settings.CameraFov, (float)Screen.width / Screen.height);
