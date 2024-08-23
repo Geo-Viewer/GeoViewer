@@ -151,7 +151,12 @@ namespace GeoViewer.Controller.UI
 
             if (result.Response?.GlobePoint != null)
             {
+                ApplicationState.Instance.MapRenderer.Enabled = true;
                 ApplicationState.Instance.MapRenderer.MoveOrigin(result.Response.GlobePoint);
+            }
+            else
+            {
+                ApplicationState.Instance.MapRenderer.Enabled = false;
             }
             ResetCamera(false);
 

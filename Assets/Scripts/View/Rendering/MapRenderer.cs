@@ -63,6 +63,8 @@ namespace GeoViewer.View.Rendering
         private double3 _originPosition;
         public double CurrentWorldScale { get; private set; } = 1f;
 
+        public bool Enabled { get; set; } = true;
+
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
 
@@ -118,7 +120,7 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public async void UpdateMap()
         {
-            if (Camera == null || RotationCenter == null) return;
+            if (!Enabled || Camera == null || RotationCenter == null) return;
 
             CurrentRequestArea = GetRequestArea();
             _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
@@ -309,7 +311,7 @@ namespace GeoViewer.View.Rendering
         /// <param name="clearAttachedObjects">Whether attached objects should be removed</param>
         public void ClearMap(bool clearAttachedObjects = false)
         {
-            _updateCancelTask.SetCanceled();
+            _updateCancelTask.TrySetCanceled();
             foreach (var tile in _requests.Keys)
             {
                 CancelRequest(tile);
