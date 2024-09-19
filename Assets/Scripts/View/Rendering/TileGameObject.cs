@@ -27,6 +27,8 @@ namespace GeoViewer.View.Rendering
 
         [SerializeField] private float fadeDuration;
 
+        private const float ZOffsetMultiplier = 0.2f;
+
         #endregion Settings
 
         #region Fields
@@ -116,6 +118,7 @@ namespace GeoViewer.View.Rendering
             {
                 Debug.Log($"Neighbour: {neighbour.tileGameObject.TileId} in  {neighbour.direction}");
             }
+            AdjustRenderingOrder(false);
         }
 
         [Button]
@@ -252,12 +255,13 @@ namespace GeoViewer.View.Rendering
         {
             if (delayed)
             {
-                await Task.Delay((int)(fadeDuration * 1000));
+                await Task.Delay((int)(fadeDuration * 2 * 1000));
                 _material.SetFloat(ZOffsetValue, 0f);
             }
             else
             {
-                _material.SetFloat(ZOffsetValue, _material.GetFloat(ZOffsetValue) - 1f);
+                var offset = _material.GetFloat(ZOffsetValue);
+                _material.SetFloat(ZOffsetValue, offset - 1f * ZOffsetValue);
             }
         }
 
@@ -270,7 +274,7 @@ namespace GeoViewer.View.Rendering
 
         private void FadeIn()
         {
-            _material.SetFloat(ZOffsetValue, 5f);
+            _material.SetFloat(ZOffsetValue, 5f * ZOffsetMultiplier);
             _fadeValue = 1;
             _fadeIn = true;
             SetAlpha(0);

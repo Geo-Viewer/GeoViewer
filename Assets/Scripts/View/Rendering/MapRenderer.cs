@@ -37,19 +37,9 @@ namespace GeoViewer.View.Rendering
         private const int TerrainLayer = 6;
 
         /// <summary>
-        /// The maximum distance of the target from the rotation center (if greater map is scaled down)
+        /// Target distance of the camera to rotation center
         /// </summary>
-        private const float MaxTargetDistance = 100f;
-
-        /// <summary>
-        /// The minimum distance of the target from the rotation center (if smaller map is scaled up)
-        /// </summary>
-        private const float MinTargetDistance = 50f;
-
-        /// <summary>
-        /// The maximum distance of the rotation center from (0, 0, 0) (if grater origin is moved)
-        /// </summary>
-        private const float MaxRotationCenterDistance = 100f;
+        public const float TargetCamDistance = 100f;
 
         /// <summary>
         /// The minimum tile count of the map
@@ -70,8 +60,10 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public GlobePoint Origin { get; private set; } = new(49.011622, 8.416714, 120);
 
-        private double3 _originPosition = new(936944.30060395563, 183, 6276834.0088540893);
+        private double3 _originPosition;
         public double CurrentWorldScale { get; private set; } = 1f;
+
+        public bool Enabled { get; set; } = true;
 
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
@@ -84,6 +76,7 @@ namespace GeoViewer.View.Rendering
         private readonly TileGameObject _tilePrefab;
         private readonly Transform _mapParent;
         private readonly LayerManager _layerManager;
+        private ApplicationSettings Settings { get; }
 
         private HashSet<TileId> _currentSegmentation = new();
 
@@ -101,13 +94,17 @@ namespace GeoViewer.View.Rendering
         /// Creates a new <see cref="MapRenderer"/> for a given <paramref name="layerManager"/>
         /// </summary>
         /// <param name="layerManager">The layer manager to be used</param>
-        public MapRenderer(LayerManager layerManager)
+        /// <param name="settings">current Application settings</param>
+        public MapRenderer(LayerManager layerManager, ApplicationSettings settings)
         {
             _mapParent = new GameObject("Map").transform;
             _tilePrefab = Resources.Load<TileGameObject>("TilePrefab");
             _layerManager = layerManager;
+            Settings = settings;
             _layerManager.CurrentLayerChanged += (layer) => ClearMap(layer);
             ApplicationState.OnRotationCenterChanged += RotationCenterChanged;
+
+            SetOrigin(Origin);
         }
 
         #region Map Building
@@ -123,14 +120,12 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         public async void UpdateMap()
         {
-            if (Camera == null || RotationCenter == null) return;
-
-            AdjustWorldScaleAndPosition();
+            if (!Enabled || Camera == null || RotationCenter == null) return;
 
             CurrentRequestArea = GetRequestArea();
             _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
 
-            if (ApplicationState.Instance.Settings.EnableTileCulling)
+            if (Settings.EnableTileCulling)
                 _currentSegmentation = ApplyCulling(_currentSegmentation);
 
             //Collect all tasks we have to wait for
@@ -156,15 +151,13 @@ namespace GeoViewer.View.Rendering
                 {
                     var task = await Task.WhenAny(tasksToAwait);
                     tasksToAwait.Remove(task);
-                    if (task == tcs.Task)
-                    {
-                        var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToArray();
-                        CancelRequests(toCancel);
-                        AdjustRenderingOrder(toCancel, false);
-                        return;
-                    }
 
-                    //await task;
+                    if (task != tcs.Task) continue;
+
+                    var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    CancelRequests(toCancel);
+                    AdjustRenderingOrder(toCancel, false);
+                    return;
                 }
                 catch (LayerFailedException)
                 {
@@ -180,7 +173,7 @@ namespace GeoViewer.View.Rendering
             AdjustRenderingOrder(requestIds);
         }
 
-        private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out List<TileId> requestIds)
+        private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out HashSet<TileId> requestIds)
         {
             requestIds = new();
             var tasksToAwait = new List<Task>
@@ -240,10 +233,10 @@ namespace GeoViewer.View.Rendering
         {
             var middle = ResampleHeight(RotationCenter!.transform.position);
             var vec = middle - Camera!.position;
-            var multiplier = ApplicationState.Instance.Settings.RequestRadiusMultiplier;
+            var multiplier = Settings.MapSizeMultiplier;
             var distance = Math.Max(Math.Max(
                 Math.Max(Math.Abs(vec.x) / CurrentWorldScale, Math.Abs(vec.z) / CurrentWorldScale),
-                Math.Abs(vec.y) / CurrentWorldScale) * multiplier, ApplicationState.Instance.Settings.MinMapSize);
+                Math.Abs(vec.y) / CurrentWorldScale) * multiplier, Settings.MinMapSize);
 
             var corner1 = middle + new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
             var corner2 = middle - new Vector3(1, 0, 1) * (float)(distance * CurrentWorldScale);
@@ -298,7 +291,7 @@ namespace GeoViewer.View.Rendering
                                                         intersectionPoint,
                     Vector3.up);
                 return Vector3.Angle(cameraForward, tileVector) <=
-                       ApplicationState.Instance.Settings.CullingAngle;
+                       Settings.CullingAngle;
             }
         }
 
@@ -318,7 +311,7 @@ namespace GeoViewer.View.Rendering
         /// <param name="clearAttachedObjects">Whether attached objects should be removed</param>
         public void ClearMap(bool clearAttachedObjects = false)
         {
-            _updateCancelTask.SetCanceled();
+            _updateCancelTask.TrySetCanceled();
             foreach (var tile in _requests.Keys)
             {
                 CancelRequest(tile);
@@ -461,7 +454,7 @@ namespace GeoViewer.View.Rendering
                 ApplicationPositionToWorldPosition(Camera!.position));
 
             var log = Math.Log(
-                distance / (Zoom19Distance * ApplicationState.Instance.Settings.ResolutionMultiplier *
+                distance / (Zoom19Distance * Settings.ResolutionMultiplier *
                             CurrentSegmentationSettings.ResolutionMultiplier), 2);
             var roundedLog = log < 0 ? (int)log - 1 : (int)log;
             var targetZoom = 18 - roundedLog;
@@ -488,40 +481,47 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Scales the map according to the distance to the target and adjusts the origin based on the rotation center position
         /// </summary>
-        private void AdjustWorldScaleAndPosition()
+        public void AdjustWorldScaleAndPosition()
         {
-            if (Vector3.Distance(RotationCenter!.position, Vector3.zero) >
-                MaxRotationCenterDistance)
-            {
-                MoveOrigin(RotationCenter.position);
-            }
+            if (RotationCenter == null) return;
+            MoveOrigin(RotationCenter.position);
 
-            const float targetDistance = MinTargetDistance + (MaxTargetDistance - MinTargetDistance) / 2;
-            var distance = Vector3.Distance(Camera!.position, RotationCenter.position);
-            if (distance > MaxTargetDistance || (distance < MinTargetDistance && _mapParent.transform.localScale.x < 1))
+            var distance = (Vector3.Distance(Camera!.position, RotationCenter.position));
+            if (Settings.MinMapSize / Settings.MapSizeMultiplier > distance / CurrentWorldScale)
             {
-                CurrentWorldScale *= targetDistance / distance;
-                _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
+                CurrentWorldScale = TargetCamDistance / (Settings.MinMapSize / Settings.MapSizeMultiplier);
             }
+            else
+            {
+                CurrentWorldScale = TargetCamDistance / (distance / CurrentWorldScale);
+            }
+            _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
         }
 
         /// <summary>
-        /// Sets the new origin to a given <paramref name="globePoint"/>
+        /// Sets the origin values to a given GlobePoint
+        /// </summary>
+        /// <param name="globePoint">The globe point to set the origin to</param>
+        private void SetOrigin(GlobePoint globePoint)
+        {
+            Origin = globePoint;
+            _originPosition = ViewProjection.GlobePointToPosition(globePoint);
+        }
+
+        /// <summary>
+        /// Sets the new origin to a given <paramref name="globePoint"/> and moves all map objects accordingly
         /// </summary>
         /// <param name="globePoint">The <see cref="GlobePoint"/> to set the origin to</param>
         public void MoveOrigin(GlobePoint globePoint)
         {
-            Origin = globePoint;
-            var newOriginPosition = ViewProjection.GlobePointToPosition(globePoint);
-
-            var delta = WorldPositionToApplicationPosition(newOriginPosition) -
-                        WorldPositionToApplicationPosition(_originPosition);
+            var oldOriginPosition = _originPosition;
+            SetOrigin(globePoint);
+            var delta = WorldPositionToApplicationPosition(_originPosition) -
+                        WorldPositionToApplicationPosition(oldOriginPosition);
             foreach (Transform transform in _mapParent.transform)
             {
                 transform.position -= delta;
             }
-
-            _originPosition = newOriginPosition;
         }
 
         /// <summary>
@@ -550,9 +550,9 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Gets called when the rotation center changes. This attaches the new Rotation center to the map
         /// </summary>
-        /// <param name="newRotationCenter">The newly set rotationCenter</param>
-        private void RotationCenterChanged(GameObject? newRotationCenter)
+        private void RotationCenterChanged()
         {
+            var newRotationCenter = ApplicationState.Instance.RotationCenter;
             if (newRotationCenter == null) return;
             AttachToMap(newRotationCenter.transform);
         }

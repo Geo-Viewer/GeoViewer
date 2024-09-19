@@ -15,7 +15,7 @@ namespace GeoViewer.View.Rendering
         private void Start()
         {
             mapRenderer = ApplicationState.Instance.MapRenderer;
-            _lastPosition = transform.position;
+            _lastPosition = mapRenderer.ApplicationPositionToWorldPosition(transform.position);
             _timer = 0;
 
             mapRenderer.UpdateMap();
@@ -23,6 +23,7 @@ namespace GeoViewer.View.Rendering
 
         private void LateUpdate()
         {
+            mapRenderer.AdjustWorldScaleAndPosition();
             _timer += Time.deltaTime;
             if (_timer < updateTimer)
             {
@@ -30,9 +31,10 @@ namespace GeoViewer.View.Rendering
             }
 
             _timer -= updateTimer;
-            if (_lastPosition == transform.position) return;
+            var pos = mapRenderer.ApplicationPositionToWorldPosition(transform.position);
+            if (_lastPosition == pos) return;
 
-            _lastPosition = transform.position;
+            _lastPosition = pos;
             mapRenderer.UpdateMap();
         }
     }

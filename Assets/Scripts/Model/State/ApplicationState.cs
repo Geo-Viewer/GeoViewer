@@ -9,13 +9,16 @@ using GeoViewer.Model.State.Events;
 using GeoViewer.Model.Tools.Mode;
 using GeoViewer.View.Rendering;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Object = UnityEngine.Object;
 
 namespace GeoViewer.Model.State
 {
     /// <summary>
     /// The class contains information about the different states of the application.
     /// </summary>
-    public class ApplicationState
+    public sealed class ApplicationState
     {
         #region Singleton
 
@@ -30,7 +33,8 @@ namespace GeoViewer.Model.State
         {
             Settings = ConfigLoader.GetSettingsFromConfig();
             LayerManager = new LayerManager(Settings.DataLayers);
-            MapRenderer = new MapRenderer(LayerManager);
+            MapRenderer = new MapRenderer(LayerManager, Settings);
+            ReloadGraphicSettings();
         }
 
         #endregion Singleton
@@ -62,7 +66,7 @@ namespace GeoViewer.Model.State
         /// indicating that the rotation center changed its visibility.
         /// </summary>
         /// <param name="args">The arguments which should be passed to the event.</param>
-        protected virtual void OnRotationCenterVisibilityChangedEvent(RotationCenterVisibilityChangedEventArgs args)
+        private void OnRotationCenterVisibilityChangedEvent(RotationCenterVisibilityChangedEventArgs args)
         {
             RotationCenterVisibilityChangedEvent?.Invoke(this, args);
         }
@@ -166,7 +170,7 @@ namespace GeoViewer.Model.State
             {
                 if (value == _camera) return;
                 _camera = value;
-                OnCameraChanged?.Invoke(value);
+                OnCameraChanged?.Invoke();
             }
         }
 
@@ -182,7 +186,7 @@ namespace GeoViewer.Model.State
             {
                 if (value == _rotationCenter) return;
                 _rotationCenter = value;
-                OnRotationCenterChanged?.Invoke(value);
+                OnRotationCenterChanged?.Invoke();
             }
         }
 
@@ -205,9 +209,49 @@ namespace GeoViewer.Model.State
 
         #region Change Events
 
-        public static event Action<GameObject?>? OnRotationCenterChanged;
-        public static event Action<Camera?>? OnCameraChanged;
+        public static event Action? OnRotationCenterChanged;
+        public static event Action? OnCameraChanged;
 
         #endregion Change Events
+
+        #region Graphic Settings
+
+        private Volume? _postProcessVolume;
+
+        private void ReloadGraphicSettings()
+        {
+            var renderAsset = Resources.Load<UniversalRendererData>("HighFidelity_Fog");
+            AdjustFog(renderAsset);
+
+            QualitySettings.vSyncCount = Settings.EnableVSync ? 1 : 0;
+            if (!Settings.EnableVSync)
+                Application.targetFrameRate = Settings.TargetFrameRate;
+
+            if (_postProcessVolume == null)
+            {
+                _postProcessVolume = Object.Instantiate(Resources.Load<Volume>("Global Volume"));
+            }
+
+            _postProcessVolume.enabled = Settings.EnablePostProcessing;
+        }
+
+        private static readonly int FadeStartEnd = Shader.PropertyToID("_Fade_Start_End");
+        private static readonly int Fov = Shader.PropertyToID("_Fov");
+
+        private void AdjustFog(UniversalRendererData renderAsset)
+        {
+            var rendererFeature =
+                (FullScreenPassRendererFeature)renderAsset.rendererFeatures.Find(x => x.name == "FullscreenFog");
+            rendererFeature.SetActive(Settings.EnableDistanceFog);
+            var maxDistance = MapRenderer.TargetCamDistance * Settings.MapSizeMultiplier + MapRenderer.TargetCamDistance / 2;
+            rendererFeature.passMaterial.SetVector(FadeStartEnd,
+                new Vector4(maxDistance * 2 / 3, maxDistance));
+
+            var horizontalFov =
+                Camera.VerticalToHorizontalFieldOfView(Settings.CameraFov, (float)Screen.width / Screen.height);
+            rendererFeature.passMaterial.SetFloat(Fov, horizontalFov);
+        }
+
+        #endregion Graphic Settings
     }
 }

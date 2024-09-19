@@ -11,7 +11,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The settings version.
         /// </summary>
-        public const int SettingsVersion = 4;
+        public const int SettingsVersion = 5;
 
         /// <summary>
         /// If this doesn't match the settings version, we create a backup of it and reset the config.
@@ -26,12 +26,12 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
         /// </summary>
-        public float RequestRadiusMultiplier { get; set; } = 3f;
+        public float MapSizeMultiplier { get; set; } = 4f;
 
         /// <summary>
         /// The minimal size of the displayed map in metres
         /// </summary>
-        public float MinMapSize { get; set; } = 500f;
+        public float MinMapSize { get; set; } = 1000f;
 
         /// <summary>
         /// Whether Frustum Culling for map tiles should be used
@@ -42,6 +42,35 @@ namespace GeoViewer.Model.State
         /// The strength of the frustum culling
         /// </summary>
         public float CullingAngle { get; set; } = 90f;
+
+        /// <summary>
+        /// Fov of the main camera
+        /// </summary>
+        public float CameraFov { get; set; } = 60;
+
+        #region Graphics
+
+        /// <summary>
+        /// Whether distance fog should be used to hide map edge
+        /// </summary>
+        public bool EnableDistanceFog { get; set; } = true;
+
+        /// <summary>
+        /// Whether Post Processing should be enabled
+        /// </summary>
+        public bool EnablePostProcessing { get; set; } = true;
+
+        /// <summary>
+        /// Whether VSync should be enabled
+        /// </summary>
+        public bool EnableVSync { get; set; } = true;
+
+        /// <summary>
+        /// The framerate target for the Application
+        /// </summary>
+        public int TargetFrameRate { get; set; } = 120;
+
+        #endregion Graphics
 
         /// <summary>
         /// A list of all data layers
