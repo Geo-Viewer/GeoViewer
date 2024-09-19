@@ -123,10 +123,7 @@ namespace GeoViewer.View.Rendering
             if (!Enabled || Camera == null || RotationCenter == null) return;
 
             CurrentRequestArea = GetRequestArea();
-            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
-
-            if (Settings.EnableTileCulling)
-                _currentSegmentation = ApplyCulling(_currentSegmentation);
+            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
 
             //Collect all tasks we have to wait for
             var tcs = new TaskCompletionSource<object>();
@@ -252,22 +249,32 @@ namespace GeoViewer.View.Rendering
         /// <returns>The culled segmentation</returns>
         private HashSet<TileId> ApplyCulling(HashSet<TileId> segmentation)
         {
-            const float lookingDownConstant = 0.5f;
-            var lookingDown = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).magnitude < lookingDownConstant;
-            var cameraForward = Vector3.ProjectOnPlane(lookingDown ? Camera.up : Camera.forward,
-                Vector3.up);
-            var camera = Camera.GetComponent<Camera>();
-            var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
-
-            Vector3 intersectionPoint = lookingDown
-                ? GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y, camera.farClipPlane)
-                : Camera.position;
-
             return segmentation.Where(x =>
             {
                 var area = TileToArea(x);
                 return area.Points.Any((point) => IsInView(GlobePointToApplicationPosition(point)));
             }).ToHashSet();
+        }
+
+        private Vector3 cameraForward;
+        private Vector3 intersectionPoint;
+
+        /// <summary>
+        /// recalculates camera information used for culling. This needs to be called after the Camera moved
+        /// </summary>
+        private void RecalculateCullingInformation()
+        {
+            const float lookingDownConstant = 0.5f;
+            var lookingDown = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).magnitude < lookingDownConstant;
+            cameraForward = Vector3.ProjectOnPlane(lookingDown ? Camera.up : Camera.forward,
+                Vector3.up);
+
+            var camera = Camera.GetComponent<Camera>();
+            var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
+
+            intersectionPoint = lookingDown
+                ? GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y, camera.farClipPlane)
+                : Camera.position;
 
             Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
             {
@@ -284,15 +291,12 @@ namespace GeoViewer.View.Rendering
                 var vec = ray.origin + farclip * ray.direction;
                 return new Vector3(vec.x, height, vec.z);
             }
+        }
 
-            bool IsInView(Vector3 position)
-            {
-                var tileVector = Vector3.ProjectOnPlane(position -
-                                                        intersectionPoint,
-                    Vector3.up);
-                return Vector3.Angle(cameraForward, tileVector) <=
-                       Settings.CullingAngle;
-            }
+        private bool IsInView(Vector3 position)
+        {
+            var tileVector = new Vector3(position.x - intersectionPoint.x, 0, position.z - intersectionPoint.z);
+            return Vector3.Angle(cameraForward, tileVector) <= Settings.CullingAngle;
         }
 
         /// <summary>
@@ -403,6 +407,7 @@ namespace GeoViewer.View.Rendering
             bool fillBaseTiles = true)
         {
             var settings = _layerManager.CurrentSegmentationSettings;
+            RecalculateCullingInformation();
             Queue<TileId> queue = new();
             foreach (var tile in settings.Projection.GlobeAreaToTiles(area, settings.ZoomBounds, targetTileCount))
             {
@@ -449,8 +454,10 @@ namespace GeoViewer.View.Rendering
         /// <returns>The target zoom</returns>
         private int GetTargetZoom(GlobePoint globePoint)
         {
+            var pointPos = GlobePointToApplicationPosition(globePoint, true);
+
             var distance = Vector3.Distance(
-                ApplicationPositionToWorldPosition(GlobePointToApplicationPosition(globePoint, true)),
+                ApplicationPositionToWorldPosition(pointPos),
                 ApplicationPositionToWorldPosition(Camera!.position));
 
             var log = Math.Log(
@@ -470,8 +477,17 @@ namespace GeoViewer.View.Rendering
         /// <returns>The target zoom</returns>
         private int GetTargetZoom(TileId tileId)
         {
-            return GetTargetZoom(CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId)
-                .GetClosestPoint(ApplicationPositionToGlobePoint(Camera!.position)));
+            var area = CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId);
+            //TODO: somehow find relevant (point with minimum angle) point
+            if (Settings.EnableTileCulling && !IsInView(GlobePointToApplicationPosition(area.NorthEastPoint))
+                                           && !IsInView(GlobePointToApplicationPosition(area.NorthWestPoint))
+                                           && !IsInView(GlobePointToApplicationPosition(area.SouthEastPoint))
+                                           && !IsInView(GlobePointToApplicationPosition(area.SouthWestPoint)))
+            {
+                return int.MinValue;
+            }
+
+            return GetTargetZoom(area.GetClosestPoint(ApplicationPositionToGlobePoint(Camera!.position)));
         }
 
         #endregion Segmentation Calculation
@@ -495,6 +511,7 @@ namespace GeoViewer.View.Rendering
             {
                 CurrentWorldScale = TargetCamDistance / (distance / CurrentWorldScale);
             }
+
             _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
         }
 
