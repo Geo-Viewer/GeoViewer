@@ -27,7 +27,7 @@ namespace GeoViewer.View.Rendering
 
         [SerializeField] private float fadeDuration;
 
-        private const float ZOffsetMultiplier = 0.2f;
+        private const float ZOffsetMultiplier = 0.01f;
 
         #endregion Settings
 
