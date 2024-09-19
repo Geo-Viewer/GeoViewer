@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GeoViewer.Controller.Map;
 using GeoViewer.Controller.Networking;
+using GeoViewer.Controller.Util;
 using GeoViewer.Model.DataLayers.Settings;
 using GeoViewer.Model.Globe;
 using GeoViewer.Model.Grid;
@@ -39,14 +40,24 @@ namespace GeoViewer.Controller.DataLayers
         protected override void RenderDataInternal(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
             MapRenderer mapRenderer)
         {
-            var midpoint =
-                mapRenderer.ApplicationPositionToWorldPosition(
-                    mapRenderer.GlobePointToApplicationPosition(GlobePoint.MidPoint(data[0], data[^1])));
+            RenderHeightMesh(data, tileGameObject, mapRenderer, Settings.Priority);
+        }
+
+        /// <summary>
+        /// Builds the tile mesh from the given GlobePoints and sets the mesh accordingly on the given TileGameObject
+        /// </summary>
+        /// <param name="points">The points to generate the Mesh from</param>
+        /// <param name="tileGameObject">The TileGameObject to set the mesh to</param>
+        /// <param name="mapRenderer">The MapRenderer the tile belongs to</param>
+        /// <param name="priority">The Priority of the Mesh</param>
+        public static void RenderHeightMesh(IReadOnlyList<GlobePoint> points, TileGameObject tileGameObject,
+            MapRenderer mapRenderer, int priority)
+        {
+            var midpoint = mapRenderer.ViewProjection.GlobePointToPosition(GlobePoint.MidPoint(points[0], points[^1]));
             midpoint.y = 0;
-            var vertices = data.Select(point =>
-                mapRenderer.ApplicationPositionToWorldPosition(mapRenderer.GlobePointToApplicationPosition(point)) -
-                midpoint).ToArray();
-            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), _settings.Priority);
+            var vertices = points.Select(point =>
+                (mapRenderer.ViewProjection.GlobePointToPosition(point) - midpoint).ToVector3()).ToArray();
+            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), priority);
         }
 
         /// <inheritdoc/>

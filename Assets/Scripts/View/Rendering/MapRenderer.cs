@@ -24,7 +24,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// The current projection used by the map renderer
         /// </summary>
-        private IProjection ViewProjection { get; } = new WebMercatorProjection();
+        public IProjection ViewProjection { get; } = new WebMercatorProjection();
 
         /// <summary>
         /// At which distance the zoom should switch from 18 to 19

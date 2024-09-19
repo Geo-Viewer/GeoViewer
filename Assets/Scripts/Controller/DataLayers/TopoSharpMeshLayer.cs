@@ -42,15 +42,8 @@ namespace GeoViewer.Controller.DataLayers
         protected override void RenderDataInternal(IReadOnlyList<GlobePoint> data, TileGameObject tileGameObject,
             MapRenderer mapRenderer)
         {
-            var midpoint =
-                mapRenderer.ApplicationPositionToWorldPosition(
-                    mapRenderer.GlobePointToApplicationPosition(GlobePoint.MidPoint(data[0], data[^1])));
-            midpoint.y = 0;
-            var vertices = data.Select(point =>
-                mapRenderer.ApplicationPositionToWorldPosition(mapRenderer.GlobePointToApplicationPosition(point)) -
-                midpoint).ToArray();
-            tileGameObject.SetMesh(MeshBuilder.BuildMesh(vertices), _settings.Priority);
- 
+            OtdMeshLayer.RenderHeightMesh(data, tileGameObject, mapRenderer, Settings.Priority);
+
             foreach (var neighbour in mapRenderer.GetRenderedNeighbours(tileGameObject))
             {
                 tileGameObject.AdjustVertexHeight(neighbour.tileGameObject, neighbour.direction,
