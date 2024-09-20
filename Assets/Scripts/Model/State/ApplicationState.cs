@@ -7,7 +7,9 @@ using GeoViewer.Controller.Files;
 using GeoViewer.Controller.Input;
 using GeoViewer.Model.State.Events;
 using GeoViewer.Model.Tools.Mode;
+using GeoViewer.View.FilePicking;
 using GeoViewer.View.Rendering;
+using SimpleFileBrowser;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -35,6 +37,11 @@ namespace GeoViewer.Model.State
             LayerManager = new LayerManager(Settings.DataLayers);
             MapRenderer = new MapRenderer(LayerManager, Settings);
             ReloadGraphicSettings();
+            foreach (var folder in QuickLinks.SpecialFolders)
+            {
+                var path = Environment.GetFolderPath(folder);
+                FileBrowser.AddQuickLink(folder.ToString(), path);
+            }
         }
 
         #endregion Singleton

@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using GeoViewer.Controller.Util;
 using GeoViewer.Model.Globe;
-using SFB;
+using SimpleFileBrowser;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -97,9 +97,8 @@ namespace GeoViewer.View.UI.Dialogue
 
         private void GetPath(string dialogueName, string extension, TextField field)
         {
-            StandaloneFileBrowser.OpenFilePanelAsync(dialogueName, _lastUsedFolder, extension, false,
-                (paths) => SetPath(field, paths)
-            );
+            FileBrowser.SetFilters(false, extension);
+            FileBrowser.ShowLoadDialog((paths) => SetPath(field, paths), () => Debug.Log("Canceled File Browser"), FileBrowser.PickMode.Files, false, _lastUsedFolder, "", dialogueName);
         }
 
         private void SetPath(TextField field, string[] path)

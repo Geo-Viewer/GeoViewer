@@ -3,6 +3,7 @@ using GeoViewer.Controller.Input;
 using GeoViewer.Model.Globe;
 using GeoViewer.Model.State;
 using GeoViewer.Model.Tools.Mode;
+using SimpleFileBrowser;
 using UnityEngine;
 
 namespace GeoViewer.Controller.Movement
@@ -41,6 +42,7 @@ namespace GeoViewer.Controller.Movement
 
         private void Update()
         {
+            if (FileBrowser.IsOpen) return;
             // if the rotation center isn't set, we can't move the camera
             var rotationCenter = ApplicationState.Instance.RotationCenter;
             if (rotationCenter is null)
