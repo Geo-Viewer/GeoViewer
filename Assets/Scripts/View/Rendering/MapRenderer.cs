@@ -44,7 +44,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// The minimum tile count of the map
         /// </summary>
-        private const int BaseTileCount = 16;
+        private const int BaseTileCount = 4;
 
         #endregion Settings
 
