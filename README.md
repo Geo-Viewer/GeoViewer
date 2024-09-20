@@ -17,9 +17,9 @@ This software was developed using the [Unity Game Engine](https://unity.com/) (2
 
 ## Screenshots
 
-<p align="center"><img src="Screenshots/Iceland.png" width="1919" height="1007" /><p/>
-<p align="center"><img src="Screenshots/Germany.png" width="1919" height="998" /><p/>
-<p align="center"><img src="Screenshots/SurfaceMesh.png" width="1072" height="648" /><p/>
+<p align="center"><img src="Screenshots/Iceland.png" width="800"/><p/>
+<p align="center"><img src="Screenshots/Germany.png" width="800"/><p/>
+<p align="center"><img src="Screenshots/SurfaceMesh.png" width="800"/><p/>
 
 ## Installation
 
