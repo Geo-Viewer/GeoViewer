@@ -264,17 +264,15 @@ namespace GeoViewer.View.Rendering
         /// </summary>
         private void RecalculateCullingInformation()
         {
-            const float lookingDownConstant = 0.5f;
-            var lookingDown = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).magnitude < lookingDownConstant;
-            cameraForward = Vector3.ProjectOnPlane(lookingDown ? Camera.up : Camera.forward,
-                Vector3.up);
+            cameraForward = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).normalized;
+            if (cameraForward == Vector3.zero)
+                cameraForward = Vector3.ProjectOnPlane(Camera.up, Vector3.up).normalized;
 
             var camera = Camera.GetComponent<Camera>();
             var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
 
-            intersectionPoint = lookingDown
-                ? GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y, camera.farClipPlane)
-                : Camera.position;
+            intersectionPoint = GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y,
+                camera.farClipPlane);
 
             Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
             {
@@ -290,6 +288,37 @@ namespace GeoViewer.View.Rendering
 
                 var vec = ray.origin + farclip * ray.direction;
                 return new Vector3(vec.x, height, vec.z);
+            }
+        }
+
+        private bool IsInView(GlobeArea area)
+        {
+            //first check if any corner point is in view
+            var points = new Vector3[]
+            {
+                GlobePointToApplicationPosition(area.NorthEastPoint),
+                GlobePointToApplicationPosition(area.NorthWestPoint),
+                GlobePointToApplicationPosition(area.SouthEastPoint),
+                GlobePointToApplicationPosition(area.SouthWestPoint)
+            };
+            if (points.Any(IsInView) || area.Contains(ApplicationPositionToGlobePoint(intersectionPoint)))
+            {
+                return true;
+            }
+
+            //check if camera forward intersects main diagonals
+            return CameraForwardIntersectsMainDiagonal(points[0], points[2]) ||
+                   CameraForwardIntersectsMainDiagonal(points[1], points[3]);
+
+            bool CameraForwardIntersectsMainDiagonal(Vector3 a, Vector3 b)
+            {
+                var dir = b - a;
+                var dx = a.x - intersectionPoint.x;
+                var dy = a.z - intersectionPoint.z;
+                var det = dir.x * cameraForward.z - dir.z * cameraForward.x;
+                var t = (dy * cameraForward.x - dx * cameraForward.z) / det;
+                var u = (dy * dir.x - dx * dir.z) / det;
+                return t >= 0 && t <= 1 && u >= 0;
             }
         }
 
@@ -478,14 +507,8 @@ namespace GeoViewer.View.Rendering
         private int GetTargetZoom(TileId tileId)
         {
             var area = CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId);
-            //TODO: somehow find relevant (point with minimum angle) point
-            if (Settings.EnableTileCulling && !IsInView(GlobePointToApplicationPosition(area.NorthEastPoint))
-                                           && !IsInView(GlobePointToApplicationPosition(area.NorthWestPoint))
-                                           && !IsInView(GlobePointToApplicationPosition(area.SouthEastPoint))
-                                           && !IsInView(GlobePointToApplicationPosition(area.SouthWestPoint)))
-            {
+            if (Settings.EnableTileCulling && !IsInView(area))
                 return int.MinValue;
-            }
 
             return GetTargetZoom(area.GetClosestPoint(ApplicationPositionToGlobePoint(Camera!.position)));
         }
