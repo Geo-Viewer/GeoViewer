@@ -7,15 +7,23 @@
 GeoViewer is an application aiming to combine model viewing with map rendering to visualize models in their respective geographic context.
 It enables you to load 3D models at their correct geographic position and view them with their surroundings.
 
-This software was developed during a practical software project for the computer science bachelor by a team of five students.
+This software was developed using the [Unity Game Engine](https://unity.com/) (2022.3.13f1 LTS) over the timespan of half a year for the computer science bachelor by a team of five students.
+
+## Features
+- Display the world surface via configurable data sources for height and texture data
+- Load 3D models at their correct geographic position
+- Transform/rotate/scale loaded models
+- measure real world distances
+
+## Screenshots
+
+<p align="center"><img src="Screenshots/Iceland.png" width="1919" height="1007" /><p/>
+<p align="center"><img src="Screenshots/Germany.png" width="1919" height="998" /><p/>
+<p align="center"><img src="Screenshots/SurfaceMesh.png" width="1072" height="648" /><p/>
 
 ## Installation
 
 Download the respective folder from releases and unpack it. The application supports Windows 10/11 and Ubuntu 22.04 (should also work for newer versions).
-
-## Development
-
-GeoViewer was developed using the [Unity Game Engine](https://unity.com/) (2022.3.13f1 LTS) over the timespan of half a year.
 
 ## Data
 
