@@ -21,11 +21,12 @@ namespace GeoViewer.Test.Player.Model.State
         public IEnumerator AddSelected()
         {
             var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var sceneobj = cube.AddComponent<SceneObject>();
 
-            Assert.False(ApplicationState.Instance.SelectedObjects.Contains(cube));
+            Assert.False(ApplicationState.Instance.SelectedObjects.Contains(sceneobj));
 
-            ApplicationState.Instance.AddSelectedObject(cube);
-            Assert.True(ApplicationState.Instance.SelectedObjects.Contains(cube));
+            sceneobj.IsSelected = true;
+            Assert.True(ApplicationState.Instance.SelectedObjects.Contains(sceneobj));
 
             yield break;
         }
@@ -34,11 +35,12 @@ namespace GeoViewer.Test.Player.Model.State
         public IEnumerator RemoveSelected()
         {
             var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-
-            ApplicationState.Instance.AddSelectedObject(cube);
-            Assert.True(ApplicationState.Instance.SelectedObjects.Contains(cube));
-            ApplicationState.Instance.RemoveSelectedObject(cube);
-            Assert.False(ApplicationState.Instance.SelectedObjects.Contains(cube));
+            var sceneobj = cube.AddComponent<SceneObject>();
+            
+            sceneobj.IsSelected = true;
+            Assert.True(ApplicationState.Instance.SelectedObjects.Contains(sceneobj));
+            sceneobj.IsSelected = false;
+            Assert.False(ApplicationState.Instance.SelectedObjects.Contains(sceneobj));
 
             yield break;
         }

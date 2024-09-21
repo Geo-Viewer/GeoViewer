@@ -68,9 +68,6 @@ namespace GeoViewer.View.Rendering
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
 
-        private readonly ConcurrentDictionary<Transform, GlobePoint>
-            _mapObjects = new(); //TODO: somehow update GlobePoint on move 
-
         private TaskCompletionSource<object> _updateCancelTask = new();
 
         private readonly TileGameObject _tilePrefab;
@@ -217,6 +214,7 @@ namespace GeoViewer.View.Rendering
 
             tileObject = Object.Instantiate(_tilePrefab, pos, Quaternion.identity, _mapParent);
             tileObject.TileId = tileId;
+            tileObject.MeshSet += OnMeshSet;
             _renderedTiles.TryAdd(tileId, tileObject);
 
             return tileObject;
@@ -341,8 +339,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Clears the whole rendered ma and data layer caches
         /// </summary>
-        /// <param name="clearAttachedObjects">Whether attached objects should be removed</param>
-        public void ClearMap(bool clearAttachedObjects = false)
+        public void ClearMap()
         {
             _updateCancelTask.TrySetCanceled();
             foreach (var tile in _requests.Keys)
@@ -351,8 +348,6 @@ namespace GeoViewer.View.Rendering
             }
 
             RemoveTiles(_renderedTiles.Keys);
-            if (clearAttachedObjects)
-                _mapObjects.Clear();
             MoveOrigin(new GlobePoint());
             CurrentWorldScale = 1f;
             _mapParent.localScale = Vector3.one;
@@ -574,13 +569,13 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Tries to set the origin to the position of a given mapObject
+        /// Tries to set the origin to the position of a given sceneObject
         /// </summary>
-        /// <param name="mapObject">The object attached to the map to set the origin to</param>
-        public void MoveOrigin(Transform mapObject)
+        /// <param name="sceneObject">The object attached to the map to set the origin to</param>
+        public void MoveOrigin(SceneObject sceneObject)
         {
-            if (!_mapObjects.TryGetValue(mapObject, out var point)) return;
-            MoveOrigin(point);
+            if (sceneObject.GlobePoint == null) return;
+            MoveOrigin(sceneObject.GlobePoint);
         }
 
         #endregion Origin Movement
@@ -603,11 +598,7 @@ namespace GeoViewer.View.Rendering
         /// <param name="transform">The transform to attach</param>
         public void AttachToMap(Transform transform)
         {
-            var point = ApplicationPositionToGlobePoint(transform.position);
-            if (_mapObjects.TryAdd(transform, point))
-                transform.parent = _mapParent;
-            else
-                _mapObjects.TryUpdate(transform, point, _mapObjects[transform]);
+            transform.parent = _mapParent;
         }
 
         /// <summary>
@@ -618,22 +609,37 @@ namespace GeoViewer.View.Rendering
         /// <param name="globePoint">The globe point to attach the transform to</param>
         /// <param name="pivotDelta">The amount to move the object pivot by</param>
         /// <param name="attachToGround">Whether the pivot should be snapped to ground height</param>
-        public void AttachToMap(Transform transform, GlobePoint globePoint, Vector3 pivotDelta,
-            bool attachToGround = false)
+        public void AttachToMap(SceneObject sceneObject, AttachementMode attachementMode, GlobePoint globePoint,
+            float height)
         {
             var scale = (float)ViewProjection.GetScaleFactor(globePoint) * (float)CurrentWorldScale;
-            transform.localScale = Vector3.one * scale;
+            sceneObject.transform.localScale = Vector3.one * scale;
 
-            var pos = GlobePointToApplicationPosition(globePoint) - pivotDelta * scale;
+            var pos = GlobePointToApplicationPosition(globePoint);
 
-            if (attachToGround)
+            pos = ResampleHeight(pos);
+            pos.y += height * scale;
+
+            sceneObject.transform.position = pos;
+            sceneObject.AttachementMode = attachementMode;
+            sceneObject.GlobePoint = globePoint;
+            sceneObject.Height = height;
+            AttachToMap(sceneObject.transform);
+        }
+
+        public void OnMeshSet(TileId tileId)
+        {
+            if (!_currentSegmentation.Contains(tileId)) return;
+            var area = TileToArea(tileId);
+
+            foreach (var obj in ApplicationState.Instance.SceneObjects)
             {
-                pos = ResampleHeight(pos);
-                pos.y -= pivotDelta.y * scale;
+                if (obj.AttachementMode != AttachementMode.RelativeToSurface) continue;
+                if (!area.Contains(obj.GlobePoint)) return;
+                var pos = ResampleHeight(obj.transform.position);
+                pos.y += obj.Height * (float)CurrentWorldScale;
+                obj.transform.position = pos;
             }
-
-            transform.position = pos;
-            AttachToMap(transform);
         }
 
         #endregion Object Attachment
@@ -770,6 +776,7 @@ namespace GeoViewer.View.Rendering
             if (_renderedTiles.TryRemove(tileId, out var tileGameObject))
             {
                 tileGameObject.Remove();
+                tileGameObject.MeshSet -= OnMeshSet;
             }
         }
 

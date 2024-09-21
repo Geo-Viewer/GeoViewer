@@ -57,6 +57,8 @@ namespace GeoViewer.View.Rendering
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
         private static readonly int ZOffsetValue = Shader.PropertyToID("_ZOffsetValue");
 
+        public event Action<TileId> MeshSet;
+
         #endregion Fields
 
         private void Awake()
@@ -98,6 +100,7 @@ namespace GeoViewer.View.Rendering
             meshFilter.mesh = mesh;
             meshCollider.sharedMesh = mesh;
             MeshPriority = priority;
+            MeshSet.Invoke(TileId);
         }
 
         /// <summary>

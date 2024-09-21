@@ -38,8 +38,10 @@ namespace GeoViewer.Test.Player.Controller.Tools.BuiltinTools
 
             // add object
             var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var sceneobj = obj.AddComponent<SceneObject>();
+
             obj.layer = LayerMask.NameToLayer("Selected");
-            ApplicationState.Instance.AddSelectedObject(obj);
+            sceneobj.IsSelected = true;
 
             // register tool
             var id = ToolManager.Instance.Registry.RegisterTool(new MovementTool(new Inputs(new InputManager())));
@@ -73,8 +75,10 @@ namespace GeoViewer.Test.Player.Controller.Tools.BuiltinTools
 
             // add object
             var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var sceneobj = obj.AddComponent<SceneObject>();
+
             obj.layer = LayerMask.NameToLayer("Selected");
-            ApplicationState.Instance.AddSelectedObject(obj);
+            sceneobj.IsSelected = true;
 
             // register tool
             var id = ToolManager.Instance.Registry.RegisterTool(new MovementTool(new Inputs(new InputManager())));

@@ -86,14 +86,14 @@ namespace GeoViewer.Controller.Tools.BuiltinTools
             if (RaycastUtil.GetCursorRaycastHit(_selectableLayerId, out var hit))
             {
                 // if the hit object isn't selected, we select it
-                var hitObject = hit.transform.gameObject;
-                ApplicationState.Instance.CommandHandler.Execute(new SelectObject(hitObject));
+                if (hit.transform.parent.TryGetComponent(out SceneObject sceneObject))
+                    ApplicationState.Instance.CommandHandler.Execute(new SelectObject(sceneObject, hit.transform.gameObject));
             }
             else if (RaycastUtil.GetCursorRaycastHit(_selectedLayerId, out hit))
             {
                 // if the hit object is selected, we deselect it
-                var hitObject = hit.transform.gameObject;
-                ApplicationState.Instance.CommandHandler.Execute(new DeselectObject(hitObject));
+                if (hit.transform.parent.TryGetComponent(out SceneObject sceneObject))
+                    ApplicationState.Instance.CommandHandler.Execute(new DeselectObject(sceneObject, hit.transform.gameObject));
             }
         }
     }

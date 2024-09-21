@@ -9,29 +9,31 @@ namespace GeoViewer.Controller.Commands
     /// </summary>
     public class DeselectObject : ICommand
     {
-        private GameObject _object;
+        private SceneObject _object;
+        private GameObject _visual;
 
         /// <summary>
         /// Creates a new <see cref="DeselectObject"/> command.
         /// </summary>
         /// <param name="o">The object to deselect.</param>
-        public DeselectObject(GameObject o)
+        public DeselectObject(SceneObject o, GameObject visual)
         {
             _object = o;
+            _visual = visual;
         }
 
         /// <inheritdoc/>
         public void Execute()
         {
-            _object.layer = LayerMask.NameToLayer(SelectionTool.SelectableLayer);
-            ApplicationState.Instance.RemoveSelectedObject(_object);
+            _visual.layer = LayerMask.NameToLayer(SelectionTool.SelectableLayer);
+            _object.IsSelected = false;
         }
 
         /// <inheritdoc/>
         public void Undo()
         {
-            _object.layer = LayerMask.NameToLayer(SelectionTool.SelectedLayer);
-            ApplicationState.Instance.AddSelectedObject(_object);
+            _visual.layer = LayerMask.NameToLayer(SelectionTool.SelectedLayer);
+            _object.IsSelected = true;
         }
     }
 }

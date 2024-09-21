@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using GeoViewer.Controller.DataLayers;
 using GeoViewer.Controller.Movement;
 using GeoViewer.Controller.ObjLoading;
@@ -129,12 +130,15 @@ namespace GeoViewer.Controller.UI
         /// </summary>
         public void ResetCamera(bool resetToObject = true)
         {
-            if (ApplicationState.Instance.Camera != null)
+            if (ApplicationState.Instance.Camera == null) return;
+
+            if (resetToObject && ObjLoader.LoadedObject != null 
+                              && ObjLoader.LoadedObject.TryGetComponent(out SceneObject sceneObject))
             {
-                if (resetToObject && ObjLoader.LoadedObject != null)
-                    ApplicationState.Instance.MapRenderer.MoveOrigin(ObjLoader.LoadedObject.transform);
-                ApplicationState.Instance.Camera.GetComponent<CameraController>().SetPosition(Vector3.zero);
+                ApplicationState.Instance.MapRenderer.MoveOrigin(sceneObject);
             }
+
+            ApplicationState.Instance.Camera.GetComponent<CameraController>().SetPosition(Vector3.zero);
         }
 
         private async void ImportObject()
@@ -158,6 +162,7 @@ namespace GeoViewer.Controller.UI
             {
                 ApplicationState.Instance.MapRenderer.Enabled = false;
             }
+
             ResetCamera(false);
 
             //Create and show map

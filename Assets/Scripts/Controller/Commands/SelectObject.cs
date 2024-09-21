@@ -9,29 +9,34 @@ namespace GeoViewer.Controller.Commands
     /// </summary>
     public class SelectObject : ICommand
     {
-        private GameObject _object;
+        private SceneObject _object;
+        private GameObject _visual;
 
         /// <summary>
         /// Creates a new <see cref="SelectObject"/> command.
         /// </summary>
         /// <param name="o">The object to select.</param>
-        public SelectObject(GameObject o)
+        public SelectObject(SceneObject o, GameObject visual)
         {
             _object = o;
+            _visual = visual;
         }
 
         /// <inheritdoc/>
         public void Execute()
         {
-            _object.layer = LayerMask.NameToLayer(SelectionTool.SelectedLayer);
-            ApplicationState.Instance.AddSelectedObject(_object);
+            _visual.layer = LayerMask.NameToLayer(SelectionTool.SelectedLayer);
+            _object.IsSelected = true;
+
+            if (_object.IsUserMovable && _object.AttachementMode == AttachementMode.RelativeToSurface)
+                _object.AttachementMode = AttachementMode.Absolute;
         }
 
         /// <inheritdoc/>
         public void Undo()
         {
-            _object.layer = LayerMask.NameToLayer(SelectionTool.SelectableLayer);
-            ApplicationState.Instance.RemoveSelectedObject(_object);
+            _object.gameObject.layer = LayerMask.NameToLayer(SelectionTool.SelectableLayer);
+            _object.IsSelected = false;
         }
     }
 }
