@@ -77,6 +77,9 @@ namespace GeoViewer.View.Rendering
 
         private HashSet<TileId> _currentSegmentation = new();
 
+        private Vector3 _cameraForward;
+        private Vector3 _intersectionPoint;
+
         #endregion Fields
 
         #region Shortcuts
@@ -167,6 +170,12 @@ namespace GeoViewer.View.Rendering
             AdjustRenderingOrder(requestIds);
         }
 
+        /// <summary>
+        /// Determines all tile requests that need to be awaited for map update to be completed
+        /// </summary>
+        /// <param name="tcs">The TaskCompletionSource used to cancel request await</param>
+        /// <param name="requestIds">A HeshSet containing all tiles for which a request exists</param>
+        /// <returns></returns>
         private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out HashSet<TileId> requestIds)
         {
             requestIds = new();
@@ -178,15 +187,11 @@ namespace GeoViewer.View.Rendering
                 {
                     var tileObject = GetOrCreateTileObject(tile);
 
-                    //if the tile already has Mesh and Texture, we don't need to request anything
-                    if (tileObject is { MeshPriority: >= 0, TexturePriority: >= 0 }) continue;
-
                     request = _layerManager.GetTileRequest(tile, tileObject, this);
                     _requests.TryAdd(tile, request);
                 }
 
-                tasksToAwait.Add(request.TextureRender!);
-                tasksToAwait.Add(request.MeshRender!);
+                tasksToAwait.Add(request.Render());
                 requestIds.Add(tile);
             }
 
@@ -241,35 +246,18 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Culls the given segmentation based on camera view
-        /// </summary>
-        /// <param name="segmentation">The segmentation to adjust</param>
-        /// <returns>The culled segmentation</returns>
-        private HashSet<TileId> ApplyCulling(HashSet<TileId> segmentation)
-        {
-            return segmentation.Where(x =>
-            {
-                var area = TileToArea(x);
-                return area.Points.Any((point) => IsInView(GlobePointToApplicationPosition(point)));
-            }).ToHashSet();
-        }
-
-        private Vector3 cameraForward;
-        private Vector3 intersectionPoint;
-
-        /// <summary>
         /// recalculates camera information used for culling. This needs to be called after the Camera moved
         /// </summary>
         private void RecalculateCullingInformation()
         {
-            cameraForward = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).normalized;
-            if (cameraForward == Vector3.zero)
-                cameraForward = Vector3.ProjectOnPlane(Camera.up, Vector3.up).normalized;
+            _cameraForward = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).normalized;
+            if (_cameraForward == Vector3.zero)
+                _cameraForward = Vector3.ProjectOnPlane(Camera.up, Vector3.up).normalized;
 
             var camera = Camera.GetComponent<Camera>();
             var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
 
-            intersectionPoint = GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y,
+            _intersectionPoint = GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y,
                 camera.farClipPlane);
 
             Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
@@ -299,7 +287,7 @@ namespace GeoViewer.View.Rendering
                 GlobePointToApplicationPosition(area.SouthEastPoint),
                 GlobePointToApplicationPosition(area.SouthWestPoint)
             };
-            if (points.Any(IsInView) || area.Contains(ApplicationPositionToGlobePoint(intersectionPoint)))
+            if (points.Any(IsInView) || area.Contains(ApplicationPositionToGlobePoint(_intersectionPoint)))
             {
                 return true;
             }
@@ -311,10 +299,10 @@ namespace GeoViewer.View.Rendering
             bool CameraForwardIntersectsMainDiagonal(Vector3 a, Vector3 b)
             {
                 var dir = b - a;
-                var dx = a.x - intersectionPoint.x;
-                var dy = a.z - intersectionPoint.z;
-                var det = dir.x * cameraForward.z - dir.z * cameraForward.x;
-                var t = (dy * cameraForward.x - dx * cameraForward.z) / det;
+                var dx = a.x - _intersectionPoint.x;
+                var dy = a.z - _intersectionPoint.z;
+                var det = dir.x * _cameraForward.z - dir.z * _cameraForward.x;
+                var t = (dy * _cameraForward.x - dx * _cameraForward.z) / det;
                 var u = (dy * dir.x - dx * dir.z) / det;
                 return t >= 0 && t <= 1 && u >= 0;
             }
@@ -322,8 +310,8 @@ namespace GeoViewer.View.Rendering
 
         private bool IsInView(Vector3 position)
         {
-            var tileVector = new Vector3(position.x - intersectionPoint.x, 0, position.z - intersectionPoint.z);
-            return Vector3.Angle(cameraForward, tileVector) <= Settings.CullingAngle;
+            var tileVector = new Vector3(position.x - _intersectionPoint.x, 0, position.z - _intersectionPoint.z);
+            return Vector3.Angle(_cameraForward, tileVector) <= Settings.CullingAngle;
         }
 
         /// <summary>

@@ -38,8 +38,23 @@ namespace GeoViewer.Controller.DataLayers
         public void SetRenderTasks(ITextureLayer targetTextureLayer, IMeshLayer targetMeshLayer,
             TileGameObject tileGameObject, MapRenderer mapRenderer)
         {
-            TextureRender = GetRenderTask(TextureRequest, targetTextureLayer);
-            MeshRender = GetRenderTask(MeshRequest, targetMeshLayer);
+            if (tileGameObject.TexturePriority < targetTextureLayer.Settings.Priority)
+            {
+                TextureRender = GetRenderTask(TextureRequest, targetTextureLayer);
+            }
+            else
+            {
+                TextureRender = Task.CompletedTask;
+            }
+
+            if (tileGameObject.MeshPriority < targetMeshLayer.Settings.Priority)
+            {
+                MeshRender = GetRenderTask(MeshRequest, targetMeshLayer);
+            }
+            else
+            {
+                MeshRender = TextureRender = Task.CompletedTask;
+            }
 
             async Task GetRenderTask<TData>(Task<TData> requestTask, IDataRequest<TData> dataRequest)
             {
@@ -47,6 +62,10 @@ namespace GeoViewer.Controller.DataLayers
             }
         }
 
+        public async Task Render()
+        {
+            await Task.WhenAll(TextureRender, MeshRender);
+        }
         public void Cancel()
         {
             TokenSource.Cancel();
