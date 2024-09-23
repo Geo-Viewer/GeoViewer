@@ -28,8 +28,8 @@ namespace GeoViewer.Controller.Commands
             _visual.layer = LayerMask.NameToLayer(SelectionTool.SelectedLayer);
             _object.IsSelected = true;
 
-            if (_object.IsUserMovable && _object.AttachementMode == AttachementMode.RelativeToSurface)
-                _object.AttachementMode = AttachementMode.Absolute;
+            if (_object.IsUserMovable && _object.AttachmentMode == AttachmentMode.RelativeToSurface)
+                _object.AttachmentMode = AttachmentMode.Absolute;
         }
 
         /// <inheritdoc/>

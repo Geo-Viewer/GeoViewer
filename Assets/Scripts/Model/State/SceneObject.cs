@@ -11,7 +11,7 @@ namespace GeoViewer.Model.State
         public bool IsVisible { get; set; } = true;
         public bool IsUserMovable { get; set; } = true;
 
-        public AttachementMode AttachementMode { get; set; } = AttachementMode.Unattached;
+        public AttachmentMode AttachmentMode { get; set; } = AttachmentMode.Unattached;
         public GlobePoint? GlobePoint { get; set; }
         public float Height { get; set; } = 0f;
 
@@ -24,7 +24,7 @@ namespace GeoViewer.Model.State
         }
     }
 
-    public enum AttachementMode
+    public enum AttachmentMode
     {
         Unattached,
         RelativeToSurface,

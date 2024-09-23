@@ -174,8 +174,8 @@ namespace GeoViewer.View.Rendering
         /// Determines all tile requests that need to be awaited for map update to be completed
         /// </summary>
         /// <param name="tcs">The TaskCompletionSource used to cancel request await</param>
-        /// <param name="requestIds">A HeshSet containing all tiles for which a request exists</param>
-        /// <returns></returns>
+        /// <param name="requestIds">A HashSet containing all tiles for which a request exists</param>
+        /// <returns>A list containing all tasks that need to be awaited</returns>
         private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out HashSet<TileId> requestIds)
         {
             requestIds = new();
@@ -277,6 +277,13 @@ namespace GeoViewer.View.Rendering
             }
         }
 
+        /// <summary>
+        /// determines whether a given (rectangular) area is in view by checking if one of the following is true:
+        /// 1. any corner point is in view
+        /// 2. camera forward intersects a main diagonal
+        /// </summary>
+        /// <param name="area">The <see cref="GlobeArea"/> to check</param>
+        /// <returns>true, if the area is in view, false otherwise</returns>
         private bool IsInView(GlobeArea area)
         {
             //first check if any corner point is in view
@@ -308,6 +315,11 @@ namespace GeoViewer.View.Rendering
             }
         }
 
+        /// <summary>
+        /// Checks if a given <paramref name="position"/> is in view, by checking the angle to the camera forward vector
+        /// </summary>
+        /// <param name="position">The position to check</param>
+        /// <returns>true, if the position is in view, false otherwise</returns>
         private bool IsInView(Vector3 position)
         {
             var tileVector = new Vector3(position.x - _intersectionPoint.x, 0, position.z - _intersectionPoint.z);
@@ -460,7 +472,7 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Calculates the target zoom factor for a given <paramref name="globePoint"/>
+        /// Calculates the target zoom factor for a given <paramref name="globePoint"/>, based on its distance to the camera
         /// </summary>
         /// <param name="globePoint">The <see cref="GlobePoint"/> to calculate the target zoom for</param>
         /// <returns>The target zoom</returns>
@@ -483,10 +495,10 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Calculates the target zoom factor for the closest point ofa given <paramref name="tileId"/>
+        /// Calculates the target zoom factor for a given <paramref name="tileId"/>.
         /// </summary>
         /// <param name="tileId">The <see cref="TileId"/> to calculate the target zoom for</param>
-        /// <returns>The target zoom</returns>
+        /// <returns>int.MinValue, if the <paramref name="tileId"/> is not in view and tile culling is enabled, the max target zoom otherwise</returns>
         private int GetTargetZoom(TileId tileId)
         {
             var area = CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId);
@@ -590,39 +602,48 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Attaches the given transform to the map at the given <paramref name="globePoint"/>, so that it scales and moves with it.
+        /// Attaches the given sceneObject to the map at the given <paramref name="globePoint"/>, so that it scales and moves with it.
         /// This will also adjust its scale.
         /// </summary>
-        /// <param name="transform">The transform to attach</param>
-        /// <param name="globePoint">The globe point to attach the transform to</param>
-        /// <param name="pivotDelta">The amount to move the object pivot by</param>
-        /// <param name="attachToGround">Whether the pivot should be snapped to ground height</param>
-        public void AttachToMap(SceneObject sceneObject, AttachementMode attachementMode, GlobePoint globePoint,
+        /// <param name="sceneObject">The scene object to attach</param>
+        /// <param name="attachmentMode">The attachment mode of the <paramref name="sceneObject"/></param>
+        /// <param name="globePoint">The globe point to attach the <paramref name="sceneObject"/> to</param>
+        /// <param name="height">The height to attach the <paramref name="sceneObject"/> at</param>
+        public void AttachToMap(SceneObject sceneObject, AttachmentMode attachmentMode, GlobePoint globePoint,
             float height)
         {
             var scale = (float)ViewProjection.GetScaleFactor(globePoint) * (float)CurrentWorldScale;
             sceneObject.transform.localScale = Vector3.one * scale;
 
+            if (attachmentMode == AttachmentMode.Absolute)
+                globePoint.Altitude = height;
             var pos = GlobePointToApplicationPosition(globePoint);
 
-            pos = ResampleHeight(pos);
-            pos.y += height * scale;
+            if (attachmentMode == AttachmentMode.RelativeToSurface)
+            {
+                pos = ResampleHeight(pos);
+                pos.y += height * scale;
+            }
 
             sceneObject.transform.position = pos;
-            sceneObject.AttachementMode = attachementMode;
+            sceneObject.AttachmentMode = attachmentMode;
             sceneObject.GlobePoint = globePoint;
             sceneObject.Height = height;
             AttachToMap(sceneObject.transform);
         }
 
-        public void OnMeshSet(TileId tileId)
+        /// <summary>
+        /// Gets called when a mesh is set for the given <paramref name="tileId"/>
+        /// </summary>
+        /// <param name="tileId">The tile for which the mesh was set</param>
+        private void OnMeshSet(TileId tileId)
         {
             if (!_currentSegmentation.Contains(tileId)) return;
             var area = TileToArea(tileId);
 
             foreach (var obj in ApplicationState.Instance.SceneObjects)
             {
-                if (obj.AttachementMode != AttachementMode.RelativeToSurface) continue;
+                if (obj.AttachmentMode != AttachmentMode.RelativeToSurface || obj.GlobePoint == null) continue;
                 if (!area.Contains(obj.GlobePoint)) return;
                 var pos = ResampleHeight(obj.transform.position);
                 pos.y += obj.Height * (float)ViewProjection.GetScaleFactor(obj.GlobePoint) * (float)CurrentWorldScale;

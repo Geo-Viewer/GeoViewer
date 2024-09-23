@@ -190,7 +190,7 @@ namespace GeoViewer.Controller.ObjLoading
             //this point helps adjusting the height of the model so that this point is at height 0 in the scene.
             var lowestYValue = _objLoader.GetLowestVector().y;
             ApplicationState.Instance.MapRenderer.AttachToMap(sceneObject, 
-                AttachementMode.RelativeToSurface, 
+                AttachmentMode.RelativeToSurface, 
                 ApplicationState.Instance.MapRenderer.Origin, 
                 -lowestYValue);
         }

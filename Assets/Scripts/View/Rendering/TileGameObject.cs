@@ -75,7 +75,10 @@ namespace GeoViewer.View.Rendering
             RemovalInProgress = true;
             await Task.Delay((int)(fadeDuration * 1000));
             FadeOut();
-            Destroy(gameObject, fadeDuration);
+            if (TryGetComponent(out SceneObject sceneObject))
+                sceneObject.Destroy(fadeDuration);
+            else
+                Destroy(gameObject, fadeDuration);
         }
 
         #region Data Rendering
