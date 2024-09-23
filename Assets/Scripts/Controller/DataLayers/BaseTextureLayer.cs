@@ -52,6 +52,7 @@ namespace GeoViewer.Controller.DataLayers
             _baseTexture = new Texture2D(1, 1)
             {
                 name = "TileBaseTexture",
+                wrapMode = TextureWrapMode.Clamp,
                 filterMode = _settings.FilterMode
             };
             _baseTexture.LoadImage(File.ReadAllBytes(_settings.TexturePath));

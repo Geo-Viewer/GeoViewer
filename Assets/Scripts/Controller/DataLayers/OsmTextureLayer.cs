@@ -60,6 +60,7 @@ namespace GeoViewer.Controller.DataLayers
             var texture = new Texture2D(1, 1)
             {
                 name = request.tileId.ToString(),
+                wrapMode = TextureWrapMode.Clamp,
                 filterMode = _settings.FilterMode
             };
             texture.LoadImage(await response.Content.ReadAsByteArrayAsync());
