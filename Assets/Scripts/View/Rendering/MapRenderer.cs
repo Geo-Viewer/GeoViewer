@@ -637,7 +637,7 @@ namespace GeoViewer.View.Rendering
                 if (obj.AttachementMode != AttachementMode.RelativeToSurface) continue;
                 if (!area.Contains(obj.GlobePoint)) return;
                 var pos = ResampleHeight(obj.transform.position);
-                pos.y += obj.Height * (float)CurrentWorldScale;
+                pos.y += obj.Height * (float)ViewProjection.GetScaleFactor(obj.GlobePoint) * (float)CurrentWorldScale;
                 obj.transform.position = pos;
             }
         }
