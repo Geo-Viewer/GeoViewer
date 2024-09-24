@@ -13,8 +13,8 @@ namespace GeoViewer.Controller.Movement
     /// </summary>
     public class CameraController : MonoBehaviour
     {
-        // initialized in the start method
-        private Inputs _inputs = null!;
+        public bool UserControlled { get; set; } = true;
+        private GameObject? RotationCenter => ApplicationState.Instance.RotationCenter;
 
         private const float ZoomSpeedModifier = 0.0008f;
 
@@ -34,6 +34,8 @@ namespace GeoViewer.Controller.Movement
 
         private float _rotationY;
 
+        private readonly CameraInputs _inputs = new ();
+
         private void Awake()
         {
             ApplicationState.Instance.Camera = GetComponent<Camera>();
@@ -42,32 +44,23 @@ namespace GeoViewer.Controller.Movement
 
         private void Update()
         {
-            if (FileBrowser.IsOpen) return;
+            if (FileBrowser.IsOpen || !UserControlled) return;
+            _inputs.SetInputs(ApplicationState.Instance.Inputs);
+            UpdateCam(Time.deltaTime, _inputs);
+        }
+
+        public void UpdateCam(float delta, CameraInputs inputs)
+        {
             // if the rotation center isn't set, we can't move the camera
-            var rotationCenter = ApplicationState.Instance.RotationCenter;
-            if (rotationCenter is null)
-            {
-                return;
-            }
+            if (RotationCenter is null) return;
 
-            var rotationCenterPosition = rotationCenter.transform.position;
-
-            var distanceToRotationCenter = Vector3.Distance(transform.position,
-                rotationCenterPosition);
-
-            if (ApplicationState.Instance.ToolMode.CanAppUse(ApplicationFeature.HoldPrimary) && _inputs.PrimaryHeld)
-            {
-                HandleRotation();
-            }
-
-            HandleMovement(rotationCenter.transform, distanceToRotationCenter);
-            HandleZoom();
+            HandleRotation(inputs.PrimaryHeld, inputs.MouseDelta);
+            HandleMovement(delta, inputs.PrimaryHeld, inputs.SecondaryHeld, inputs.MouseDelta, inputs.KeyboardMovement);
+            HandleZoom(inputs.ScrollWheel);
         }
 
         private void Start()
         {
-            _inputs = ApplicationState.Instance.Inputs;
-
             // set the initial camera transform
             var cameraTransform = transform;
 
@@ -81,10 +74,12 @@ namespace GeoViewer.Controller.Movement
             ApplicationState.Instance.Camera = null;
         }
 
-        private void HandleRotation()
+        private void HandleRotation(bool primaryHeld, Vector2 mouseDelta)
         {
-            var mouseMovementX = _inputs.MouseDelta.x * RotationSpeedModifier;
-            var mouseMovementY = _inputs.MouseDelta.y * RotationSpeedModifier;
+            if (!ApplicationState.Instance.ToolMode.CanAppUse(ApplicationFeature.HoldPrimary) || !primaryHeld) return;
+
+            var mouseMovementX = mouseDelta.x * RotationSpeedModifier;
+            var mouseMovementY = mouseDelta.y * RotationSpeedModifier;
 
             _rotationX -= mouseMovementY;
             _rotationY += mouseMovementX;
@@ -95,29 +90,32 @@ namespace GeoViewer.Controller.Movement
                 new Vector3(_rotationX, _rotationY, RotationZ);
         }
 
-        private void HandleMovement(Transform rotationCenter, float distance)
+        private void HandleMovement(float delta, bool primaryHeld, bool secondaryHeld, Vector2 mouseDelta, Vector3 keyboardMovement)
         {
+            var distanceToRotationCenter = Vector3.Distance(transform.position,
+                RotationCenter!.transform.position);
+
             var movementInput = Vector3.zero;
 
-            if (ApplicationState.Instance.ToolMode.CanAppUse(ApplicationFeature.HoldSecondary) && _inputs.SecondaryHeld)
+            if (ApplicationState.Instance.ToolMode.CanAppUse(ApplicationFeature.HoldSecondary) && secondaryHeld)
             {
-                movementInput = -_inputs.MouseDelta * MouseSpeedModifier;
+                movementInput = -mouseDelta * MouseSpeedModifier;
             }
             else if (ApplicationState.Instance.ToolMode.CanAppUse(ApplicationFeature.HoldPrimary) &&
-                     _inputs.PrimaryHeld)
+                     primaryHeld)
             {
-                movementInput = _inputs.KeyBoardMovement * Time.deltaTime;
+                movementInput = keyboardMovement * delta;
             }
 
-            var movement = distance * MoveSpeedModifier * movementInput;
-            rotationCenter.Translate(movement, transform);
+            var movement = distanceToRotationCenter * MoveSpeedModifier * movementInput;
+            RotationCenter!.transform.Translate(movement, transform);
         }
 
-        private void HandleZoom()
+        private void HandleZoom(float scrollWheel)
         {
-            var zoomAmount = -_inputs.ScrollWheel * ZoomSpeedModifier;
+            var zoomAmount = -scrollWheel * ZoomSpeedModifier;
 
-            ApplicationState.Instance.RotationCenter!.transform.localScale *= Math.Clamp(1 + zoomAmount, 0.01f, 2);
+            RotationCenter!.transform.localScale *= Math.Clamp(1 + zoomAmount, 0.01f, 2);
         }
 
         /// <summary>
@@ -131,12 +129,31 @@ namespace GeoViewer.Controller.Movement
             {
                 return;
             }
+
             ApplicationState.Instance.RotationCenter.transform.position = position;
 
             if (resetZoom)
             {
                 ApplicationState.Instance.RotationCenter.transform.localScale = Vector3.one;
             }
+        }
+    }
+
+    public class CameraInputs
+    {
+        public bool PrimaryHeld { get; set; }
+        public bool SecondaryHeld { get; set; }
+        public Vector2 MouseDelta { get; set; }
+        public Vector3 KeyboardMovement { get; set; }
+        public float ScrollWheel { get; set; }
+
+        public void SetInputs(Inputs inputs)
+        {
+            PrimaryHeld = inputs.PrimaryHeld;
+            SecondaryHeld = inputs.SecondaryHeld;
+            MouseDelta = inputs.MouseDelta;
+            KeyboardMovement = inputs.KeyBoardMovement;
+            ScrollWheel = inputs.ScrollWheel;
         }
     }
 }
