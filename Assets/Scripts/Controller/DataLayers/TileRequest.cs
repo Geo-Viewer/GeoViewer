@@ -18,6 +18,10 @@ namespace GeoViewer.Controller.DataLayers
         public Task? TextureRender { get; private set; }
         private Task<IReadOnlyList<GlobePoint>> MeshRequest { get; }
         public Task? MeshRender { get; private set; }
+
+        public bool IsCompleted => TextureRender?.IsCompleted == true &&
+                                   MeshRender?.IsCompleted == true;
+
         private CancellationTokenSource TokenSource { get; }
 
         public TileRequest((TileId, GlobeArea) request, ITextureLayer targetTextureLayer, IMeshLayer targetMeshLayer)
@@ -66,6 +70,7 @@ namespace GeoViewer.Controller.DataLayers
         {
             await Task.WhenAll(TextureRender, MeshRender);
         }
+
         public void Cancel()
         {
             TokenSource.Cancel();

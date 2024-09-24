@@ -151,7 +151,10 @@ namespace GeoViewer.View.Rendering
 
                     if (task != tcs.Task) continue;
 
-                    var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    var outdatedTiles = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    var finishedRequests = _requests.Select(x => x.Value)
+                        .Where(x => x.IsCompleted);
+                    var toCancel = outdatedTiles.Concat(finishedRequests.Select(x => x.TileId));
                     CancelRequests(toCancel);
                     AdjustRenderingOrder(toCancel, false);
                     return;
