@@ -18,7 +18,7 @@ namespace GeoViewer.Controller.DataLayers
     /// </summary>
     public class LayerManager
     {
-        private readonly LayerCollection<ITextureLayer> _textureLayers =
+        public readonly LayerCollection<ITextureLayer> _textureLayers =
             new(new BaseTextureLayer(new BaseTextureLayerSettings() { Priority = 0 }));
 
         private readonly LayerCollection<IMeshLayer> _meshLayers =

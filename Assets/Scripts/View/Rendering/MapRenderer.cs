@@ -251,7 +251,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// recalculates camera information used for culling. This needs to be called after the Camera moved
         /// </summary>
-        private void RecalculateCullingInformation()
+        private void RecalculateCameraInformation()
         {
             _cameraForward = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).normalized;
             if (_cameraForward == Vector3.zero)
@@ -434,7 +434,7 @@ namespace GeoViewer.View.Rendering
             bool fillBaseTiles = true)
         {
             var settings = _layerManager.CurrentSegmentationSettings;
-            RecalculateCullingInformation();
+            RecalculateCameraInformation();
             Queue<TileId> queue = new();
             foreach (var tile in settings.Projection.GlobeAreaToTiles(area, settings.ZoomBounds, targetTileCount))
             {
