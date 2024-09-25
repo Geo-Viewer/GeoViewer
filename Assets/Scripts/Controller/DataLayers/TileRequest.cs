@@ -57,7 +57,7 @@ namespace GeoViewer.Controller.DataLayers
             }
             else
             {
-                MeshRender = TextureRender = Task.CompletedTask;
+                MeshRender = Task.CompletedTask;
             }
 
             async Task GetRenderTask<TData>(Task<TData> requestTask, IDataRequest<TData> dataRequest)

@@ -171,6 +171,7 @@ namespace GeoViewer.View.Rendering
                 .Where(tile => !_currentSegmentation.Contains(tile.Key))
                 .Select(tile => tile.Key));
             AdjustRenderingOrder(requestIds);
+            _updateCancelTask.SetCanceled();
         }
 
         /// <summary>
@@ -381,7 +382,8 @@ namespace GeoViewer.View.Rendering
                 throw new ArgumentException("Unknown layer type");
             }
 
-            _updateCancelTask.SetCanceled();
+            if (!_updateCancelTask.Task.IsCanceled)
+                _updateCancelTask.SetCanceled();
 
             foreach (var tile in _renderedTiles)
             {
