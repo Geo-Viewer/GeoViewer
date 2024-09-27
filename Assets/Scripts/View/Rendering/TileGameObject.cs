@@ -75,10 +75,7 @@ namespace GeoViewer.View.Rendering
             RemovalInProgress = true;
             await Task.Delay((int)(fadeDuration * 1000));
             FadeOut();
-            if (TryGetComponent(out SceneObject sceneObject))
-                sceneObject.Destroy(fadeDuration);
-            else
-                Destroy(gameObject, fadeDuration);
+            Destroy(gameObject, fadeDuration);
         }
 
         #region Data Rendering
@@ -95,7 +92,7 @@ namespace GeoViewer.View.Rendering
                 return;
             }
 
-            if (MeshPriority < 0)
+            if (MeshPriority < 0 && TexturePriority >= 0)
             {
                 FadeIn();
             }
@@ -238,7 +235,8 @@ namespace GeoViewer.View.Rendering
             if (TexturePriority < 0)
             {
                 meshRenderer.enabled = true;
-                FadeIn();
+                if (MeshPriority >= 0)
+                    FadeIn();
             }
 
             _material.SetTexture(BaseMap, texture);
@@ -257,8 +255,11 @@ namespace GeoViewer.View.Rendering
 
         #endregion Data Rendering
 
+        private bool RenderAdjustmentActive = false;
         public async void AdjustRenderingOrder(bool delayed = true)
         {
+            if (ZOffsetValue <= 0 || RenderAdjustmentActive) return;
+            RenderAdjustmentActive = true;
             if (delayed)
             {
                 await Task.Delay((int)(fadeDuration * 2 * 1000));
@@ -269,6 +270,8 @@ namespace GeoViewer.View.Rendering
                 var offset = _material.GetFloat(ZOffsetValue);
                 _material.SetFloat(ZOffsetValue, offset - 1f * ZOffsetValue);
             }
+
+            RenderAdjustmentActive = false;
         }
 
         #region Fading
@@ -280,7 +283,8 @@ namespace GeoViewer.View.Rendering
 
         private void FadeIn()
         {
-            _material.SetFloat(ZOffsetValue, 5f * ZOffsetMultiplier);
+            if (!RenderAdjustmentActive)
+                _material.SetFloat(ZOffsetValue, 5f * ZOffsetMultiplier);
             _fadeValue = 1;
             _fadeIn = true;
             SetAlpha(0);
