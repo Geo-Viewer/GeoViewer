@@ -34,7 +34,7 @@ namespace GeoViewer.Controller.Movement
 
         private float _rotationY;
 
-        private readonly CameraInputs _inputs = new ();
+        private readonly CameraInputs _inputs = new();
 
         private void Awake()
         {
@@ -53,6 +53,8 @@ namespace GeoViewer.Controller.Movement
         {
             // if the rotation center isn't set, we can't move the camera
             if (RotationCenter is null) return;
+
+            ApplicationState.Instance.MapRenderer.AdjustWorldScaleAndPosition();
 
             HandleRotation(inputs.PrimaryHeld, inputs.MouseDelta);
             HandleMovement(delta, inputs.PrimaryHeld, inputs.SecondaryHeld, inputs.MouseDelta, inputs.KeyboardMovement);
@@ -90,7 +92,8 @@ namespace GeoViewer.Controller.Movement
                 new Vector3(_rotationX, _rotationY, RotationZ);
         }
 
-        private void HandleMovement(float delta, bool primaryHeld, bool secondaryHeld, Vector2 mouseDelta, Vector3 keyboardMovement)
+        private void HandleMovement(float delta, bool primaryHeld, bool secondaryHeld, Vector2 mouseDelta,
+            Vector3 keyboardMovement)
         {
             var distanceToRotationCenter = Vector3.Distance(transform.position,
                 RotationCenter!.transform.position);

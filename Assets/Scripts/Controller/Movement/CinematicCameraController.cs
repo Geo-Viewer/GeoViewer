@@ -1,8 +1,10 @@
 using System;
 using GeoViewer.Model.State;
+using GeoViewer.View.UI.InformationBox;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 
 namespace GeoViewer.Controller.Movement
 {
@@ -24,7 +26,9 @@ namespace GeoViewer.Controller.Movement
         [SerializeField] private float RotationStepAmount = 0.2f;
 
         [SerializeField] private Key disableCurrentTextureLayer = Key.N;
+        [SerializeField] private Key reactivateAllLayers = Key.B;
         [SerializeField] private Key callMapUpdate = Key.M;
+        [SerializeField] private Key toggleUI = Key.V;
 
 
         private CameraController _controller;
@@ -90,9 +94,31 @@ namespace GeoViewer.Controller.Movement
                 ApplicationState.Instance.LayerManager._textureLayers.Current.SetActive(false);
             }
 
+            if (Keyboard.current[reactivateAllLayers].wasPressedThisFrame)
+            {
+                foreach (var layer in ApplicationState.Instance.LayerManager._textureLayers.GetAllAddedLayers())
+                {
+                    layer.SetActive(true);
+                }
+            }
+
             if (Keyboard.current[callMapUpdate].wasPressedThisFrame)
             {
                 ApplicationState.Instance.MapRenderer.UpdateMap();
+            }
+            
+            if (Keyboard.current[toggleUI].wasPressedThisFrame)
+            {
+                var ui = GameObject.Find("UI");
+                if (ui.TryGetComponent(out UIDocument doc))
+                {
+                    doc.rootVisualElement.visible = !doc.rootVisualElement.visible;
+                }
+
+                if (ui.TryGetComponent(out InformationBox ib))
+                {
+                    ib.SetVisible(doc.rootVisualElement.visible);
+                }
             }
         }
 

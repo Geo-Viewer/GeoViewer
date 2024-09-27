@@ -21,7 +21,7 @@ namespace GeoViewer.Model.State
         /// <summary>
         /// The factor for multiplying the resolution of the terrain
         /// </summary>
-        public int ResolutionMultiplier { get; set; } = 1;
+        public float ResolutionMultiplier { get; set; } = 1;
 
         /// <summary>
         /// The factor to multiply the camera distance with, to get the radius of the request
