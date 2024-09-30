@@ -255,11 +255,11 @@ namespace GeoViewer.View.Rendering
 
         #endregion Data Rendering
 
-        private bool RenderAdjustmentActive = false;
+        private bool _renderAdjustmentActive = false;
         public async void AdjustRenderingOrder(bool delayed = true)
         {
-            if (ZOffsetValue <= 0 || RenderAdjustmentActive) return;
-            RenderAdjustmentActive = true;
+            if (ZOffsetValue <= 0 || _renderAdjustmentActive) return;
+            _renderAdjustmentActive = true;
             if (delayed)
             {
                 await Task.Delay((int)(fadeDuration * 2 * 1000));
@@ -271,7 +271,7 @@ namespace GeoViewer.View.Rendering
                 _material.SetFloat(ZOffsetValue, offset - 1f * ZOffsetValue);
             }
 
-            RenderAdjustmentActive = false;
+            _renderAdjustmentActive = false;
         }
 
         #region Fading
@@ -283,7 +283,7 @@ namespace GeoViewer.View.Rendering
 
         private void FadeIn()
         {
-            if (!RenderAdjustmentActive)
+            if (!_renderAdjustmentActive)
                 _material.SetFloat(ZOffsetValue, 5f * ZOffsetMultiplier);
             _fadeValue = 1;
             _fadeIn = true;
