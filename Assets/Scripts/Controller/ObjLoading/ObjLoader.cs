@@ -161,7 +161,7 @@ namespace GeoViewer.Controller.ObjLoading
             {
                 LoadedObject.layer = _layerDefault;
                 SetChildObjectsLayer(LoadedObject, _layerDefault);
-                Destroy(LoadedObject);
+                LoadedObject.GetComponent<SceneObject>().Destroy();
             }
 
             if (objPath == null)
