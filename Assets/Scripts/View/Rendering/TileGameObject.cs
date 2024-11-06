@@ -27,7 +27,7 @@ namespace GeoViewer.View.Rendering
 
         [SerializeField] private float fadeDuration;
 
-        private const float ZOffsetMultiplier = 0.2f;
+        private const float ZOffsetMultiplier = 0.01f;
 
         #endregion Settings
 
@@ -56,6 +56,8 @@ namespace GeoViewer.View.Rendering
         private static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
         private static readonly int ZOffsetValue = Shader.PropertyToID("_ZOffsetValue");
+
+        public event Action<TileId> MeshSet;
 
         #endregion Fields
 
@@ -90,7 +92,7 @@ namespace GeoViewer.View.Rendering
                 return;
             }
 
-            if (MeshPriority < 0)
+            if (MeshPriority < 0 && TexturePriority >= 0)
             {
                 FadeIn();
             }
@@ -98,6 +100,7 @@ namespace GeoViewer.View.Rendering
             meshFilter.mesh = mesh;
             meshCollider.sharedMesh = mesh;
             MeshPriority = priority;
+            MeshSet.Invoke(TileId);
         }
 
         /// <summary>
@@ -232,7 +235,8 @@ namespace GeoViewer.View.Rendering
             if (TexturePriority < 0)
             {
                 meshRenderer.enabled = true;
-                FadeIn();
+                if (MeshPriority >= 0)
+                    FadeIn();
             }
 
             _material.SetTexture(BaseMap, texture);
@@ -250,7 +254,6 @@ namespace GeoViewer.View.Rendering
         }
 
         #endregion Data Rendering
-
         public async void AdjustRenderingOrder(bool delayed = true)
         {
             if (delayed)
@@ -261,7 +264,7 @@ namespace GeoViewer.View.Rendering
             else
             {
                 var offset = _material.GetFloat(ZOffsetValue);
-                _material.SetFloat(ZOffsetValue, offset - 1f * ZOffsetValue);
+                _material.SetFloat(ZOffsetValue, offset - ZOffsetMultiplier);
             }
         }
 

@@ -161,7 +161,7 @@ namespace GeoViewer.Controller.ObjLoading
             {
                 LoadedObject.layer = _layerDefault;
                 SetChildObjectsLayer(LoadedObject, _layerDefault);
-                Destroy(LoadedObject);
+                LoadedObject.GetComponent<SceneObject>().Destroy();
             }
 
             if (objPath == null)
@@ -176,6 +176,8 @@ namespace GeoViewer.Controller.ObjLoading
 
             var mtlPath = await GetMtlPathFromObjFile(objPath);
             LoadedObject = await _objLoader.Load(objPath, mtlPath);
+            var sceneObject = LoadedObject.AddComponent<SceneObject>();
+            ApplicationState.Instance.AddSceneObject(sceneObject);
 
             if (LoadedObject.transform.childCount > 1)
             {
@@ -187,8 +189,10 @@ namespace GeoViewer.Controller.ObjLoading
             //lowest point of the loaded object's mesh.
             //this point helps adjusting the height of the model so that this point is at height 0 in the scene.
             var lowestYValue = _objLoader.GetLowestVector().y;
-            ApplicationState.Instance.MapRenderer.AttachToMap(LoadedObject.transform,
-                ApplicationState.Instance.MapRenderer.Origin, new Vector3(0, lowestYValue, 0), true);
+            ApplicationState.Instance.MapRenderer.AttachToMap(sceneObject, 
+                AttachmentMode.RelativeToSurface, 
+                ApplicationState.Instance.MapRenderer.Origin, 
+                -lowestYValue);
         }
     }
 }

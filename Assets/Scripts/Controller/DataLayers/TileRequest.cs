@@ -18,6 +18,10 @@ namespace GeoViewer.Controller.DataLayers
         public Task? TextureRender { get; private set; }
         private Task<IReadOnlyList<GlobePoint>> MeshRequest { get; }
         public Task? MeshRender { get; private set; }
+
+        public bool IsCompleted => TextureRender?.IsCompleted == true &&
+                                   MeshRender?.IsCompleted == true;
+
         private CancellationTokenSource TokenSource { get; }
 
         public TileRequest((TileId, GlobeArea) request, ITextureLayer targetTextureLayer, IMeshLayer targetMeshLayer)
@@ -38,13 +42,33 @@ namespace GeoViewer.Controller.DataLayers
         public void SetRenderTasks(ITextureLayer targetTextureLayer, IMeshLayer targetMeshLayer,
             TileGameObject tileGameObject, MapRenderer mapRenderer)
         {
-            TextureRender = GetRenderTask(TextureRequest, targetTextureLayer);
-            MeshRender = GetRenderTask(MeshRequest, targetMeshLayer);
+            if (tileGameObject.TexturePriority < targetTextureLayer.Settings.Priority)
+            {
+                TextureRender = GetRenderTask(TextureRequest, targetTextureLayer);
+            }
+            else
+            {
+                TextureRender = Task.CompletedTask;
+            }
+
+            if (tileGameObject.MeshPriority < targetMeshLayer.Settings.Priority)
+            {
+                MeshRender = GetRenderTask(MeshRequest, targetMeshLayer);
+            }
+            else
+            {
+                MeshRender = Task.CompletedTask;
+            }
 
             async Task GetRenderTask<TData>(Task<TData> requestTask, IDataRequest<TData> dataRequest)
             {
                 dataRequest.RenderData(await requestTask, tileGameObject, mapRenderer);
             }
+        }
+
+        public async Task Render()
+        {
+            await Task.WhenAll(TextureRender, MeshRender);
         }
 
         public void Cancel()

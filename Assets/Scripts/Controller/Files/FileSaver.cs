@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using SFB;
+using SimpleFileBrowser;
 using UnityEngine;
 
 namespace GeoViewer.Controller.Files
@@ -22,15 +22,7 @@ namespace GeoViewer.Controller.Files
         /// <exception cref="ArgumentException">Throws an exception if the selection of a folder path gets cancelled</exception>
         public FileSaver()
         {
-            var path =
-                StandaloneFileBrowser.OpenFolderPanel("Choose save directory", Application.dataPath, false);
-
-            if (path.Length == 0)
-            {
-                throw new ArgumentException("Tried to set empty folder path");
-            }
-
-            Init(path[0]);
+            FileBrowser.ShowSaveDialog((paths) => Init(paths[0]), () => Debug.LogError("Canceled File Browser"), FileBrowser.PickMode.Folders, false, null, "Select Folder");
         }
 
         /// <summary>

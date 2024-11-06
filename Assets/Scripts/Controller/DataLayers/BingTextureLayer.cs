@@ -53,14 +53,7 @@ namespace GeoViewer.Controller.DataLayers
             var response = await _client.GetAsync(url, token);
             response.EnsureSuccessStatusCode();
 
-            var texture = new Texture2D(1, 1)
-            {
-                name = request.tileId.ToString(),
-                filterMode = _settings.FilterMode
-            };
-            texture.LoadImage(await response.Content.ReadAsByteArrayAsync());
-
-            return texture;
+            return TextureLoader.GetTextureFromData(await response.Content.ReadAsByteArrayAsync(), _settings.FilterMode, request.tileId.ToString());;
         }
     }
 }

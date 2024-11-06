@@ -24,7 +24,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// The current projection used by the map renderer
         /// </summary>
-        private IProjection ViewProjection { get; } = new WebMercatorProjection();
+        public IProjection ViewProjection { get; } = new WebMercatorProjection();
 
         /// <summary>
         /// At which distance the zoom should switch from 18 to 19
@@ -44,7 +44,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// The minimum tile count of the map
         /// </summary>
-        private const int BaseTileCount = 16;
+        private const int BaseTileCount = 4;
 
         #endregion Settings
 
@@ -68,9 +68,6 @@ namespace GeoViewer.View.Rendering
         private readonly ConcurrentDictionary<TileId, TileGameObject> _renderedTiles = new();
         private readonly ConcurrentDictionary<TileId, TileRequest> _requests = new();
 
-        private readonly ConcurrentDictionary<Transform, GlobePoint>
-            _mapObjects = new(); //TODO: somehow update GlobePoint on move 
-
         private TaskCompletionSource<object> _updateCancelTask = new();
 
         private readonly TileGameObject _tilePrefab;
@@ -79,6 +76,9 @@ namespace GeoViewer.View.Rendering
         private ApplicationSettings Settings { get; }
 
         private HashSet<TileId> _currentSegmentation = new();
+
+        private Vector3 _cameraForward;
+        private Vector3 _intersectionPoint;
 
         #endregion Fields
 
@@ -123,10 +123,7 @@ namespace GeoViewer.View.Rendering
             if (!Enabled || Camera == null || RotationCenter == null) return;
 
             CurrentRequestArea = GetRequestArea();
-            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).Reverse().ToHashSet();
-
-            if (Settings.EnableTileCulling)
-                _currentSegmentation = ApplyCulling(_currentSegmentation);
+            _currentSegmentation = CalculateSegmentation(CurrentRequestArea, BaseTileCount).ToHashSet();
 
             //Collect all tasks we have to wait for
             var tcs = new TaskCompletionSource<object>();
@@ -154,7 +151,10 @@ namespace GeoViewer.View.Rendering
 
                     if (task != tcs.Task) continue;
 
-                    var toCancel = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    var outdatedTiles = requestIds.Where(tile => !_currentSegmentation.Contains(tile)).ToHashSet();
+                    var finishedRequests = _requests.Select(x => x.Value)
+                        .Where(x => x.IsCompleted);
+                    var toCancel = outdatedTiles.Concat(finishedRequests.Select(x => x.TileId));
                     CancelRequests(toCancel);
                     AdjustRenderingOrder(toCancel, false);
                     return;
@@ -171,8 +171,15 @@ namespace GeoViewer.View.Rendering
                 .Where(tile => !_currentSegmentation.Contains(tile.Key))
                 .Select(tile => tile.Key));
             AdjustRenderingOrder(requestIds);
+            _updateCancelTask.SetCanceled();
         }
 
+        /// <summary>
+        /// Determines all tile requests that need to be awaited for map update to be completed
+        /// </summary>
+        /// <param name="tcs">The TaskCompletionSource used to cancel request await</param>
+        /// <param name="requestIds">A HashSet containing all tiles for which a request exists</param>
+        /// <returns>A list containing all tasks that need to be awaited</returns>
         private List<Task> GetTasksToAwait(TaskCompletionSource<object> tcs, out HashSet<TileId> requestIds)
         {
             requestIds = new();
@@ -184,15 +191,11 @@ namespace GeoViewer.View.Rendering
                 {
                     var tileObject = GetOrCreateTileObject(tile);
 
-                    //if the tile already has Mesh and Texture, we don't need to request anything
-                    if (tileObject is { MeshPriority: >= 0, TexturePriority: >= 0 }) continue;
-
                     request = _layerManager.GetTileRequest(tile, tileObject, this);
                     _requests.TryAdd(tile, request);
                 }
 
-                tasksToAwait.Add(request.TextureRender!);
-                tasksToAwait.Add(request.MeshRender!);
+                tasksToAwait.Add(request.Render());
                 requestIds.Add(tile);
             }
 
@@ -220,6 +223,7 @@ namespace GeoViewer.View.Rendering
 
             tileObject = Object.Instantiate(_tilePrefab, pos, Quaternion.identity, _mapParent);
             tileObject.TileId = tileId;
+            tileObject.MeshSet += OnMeshSet;
             _renderedTiles.TryAdd(tileId, tileObject);
 
             return tileObject;
@@ -246,28 +250,19 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Culls the given segmentation based on camera view
+        /// recalculates camera information used for culling. This needs to be called after the Camera moved
         /// </summary>
-        /// <param name="segmentation">The segmentation to adjust</param>
-        /// <returns>The culled segmentation</returns>
-        private HashSet<TileId> ApplyCulling(HashSet<TileId> segmentation)
+        private void RecalculateCameraInformation()
         {
-            const float lookingDownConstant = 0.5f;
-            var lookingDown = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).magnitude < lookingDownConstant;
-            var cameraForward = Vector3.ProjectOnPlane(lookingDown ? Camera.up : Camera.forward,
-                Vector3.up);
+            _cameraForward = Vector3.ProjectOnPlane(Camera!.forward, Vector3.up).normalized;
+            if (_cameraForward == Vector3.zero)
+                _cameraForward = Vector3.ProjectOnPlane(Camera.up, Vector3.up).normalized;
+
             var camera = Camera.GetComponent<Camera>();
             var camBottomRay = camera.ViewportPointToRay(new Vector3(0.5f, 0, 0));
 
-            Vector3 intersectionPoint = lookingDown
-                ? GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y, camera.farClipPlane)
-                : Camera.position;
-
-            return segmentation.Where(x =>
-            {
-                var area = TileToArea(x);
-                return area.Points.Any((point) => IsInView(GlobePointToApplicationPosition(point)));
-            }).ToHashSet();
+            _intersectionPoint = GetPointAtHeight(camBottomRay, ResampleHeight(RotationCenter!.position).y,
+                camera.farClipPlane);
 
             Vector3 GetPointAtHeight(Ray ray, float height, float farclip)
             {
@@ -284,15 +279,55 @@ namespace GeoViewer.View.Rendering
                 var vec = ray.origin + farclip * ray.direction;
                 return new Vector3(vec.x, height, vec.z);
             }
+        }
 
-            bool IsInView(Vector3 position)
+        /// <summary>
+        /// determines whether a given (rectangular) area is in view by checking if one of the following is true:
+        /// 1. any corner point is in view
+        /// 2. camera forward intersects a main diagonal
+        /// </summary>
+        /// <param name="area">The <see cref="GlobeArea"/> to check</param>
+        /// <returns>true, if the area is in view, false otherwise</returns>
+        private bool IsInView(GlobeArea area)
+        {
+            //first check if any corner point is in view
+            var points = new Vector3[]
             {
-                var tileVector = Vector3.ProjectOnPlane(position -
-                                                        intersectionPoint,
-                    Vector3.up);
-                return Vector3.Angle(cameraForward, tileVector) <=
-                       Settings.CullingAngle;
+                GlobePointToApplicationPosition(area.NorthEastPoint),
+                GlobePointToApplicationPosition(area.NorthWestPoint),
+                GlobePointToApplicationPosition(area.SouthEastPoint),
+                GlobePointToApplicationPosition(area.SouthWestPoint)
+            };
+            if (points.Any(IsInView) || area.Contains(ApplicationPositionToGlobePoint(_intersectionPoint)))
+            {
+                return true;
             }
+
+            //check if camera forward intersects main diagonals
+            return CameraForwardIntersectsMainDiagonal(points[0], points[2]) ||
+                   CameraForwardIntersectsMainDiagonal(points[1], points[3]);
+
+            bool CameraForwardIntersectsMainDiagonal(Vector3 a, Vector3 b)
+            {
+                var dir = b - a;
+                var dx = a.x - _intersectionPoint.x;
+                var dy = a.z - _intersectionPoint.z;
+                var det = dir.x * _cameraForward.z - dir.z * _cameraForward.x;
+                var t = (dy * _cameraForward.x - dx * _cameraForward.z) / det;
+                var u = (dy * dir.x - dx * dir.z) / det;
+                return t >= 0 && t <= 1 && u >= 0;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a given <paramref name="position"/> is in view, by checking the angle to the camera forward vector
+        /// </summary>
+        /// <param name="position">The position to check</param>
+        /// <returns>true, if the position is in view, false otherwise</returns>
+        private bool IsInView(Vector3 position)
+        {
+            var tileVector = new Vector3(position.x - _intersectionPoint.x, 0, position.z - _intersectionPoint.z);
+            return Vector3.Angle(_cameraForward, tileVector) <= Settings.CullingAngle;
         }
 
         /// <summary>
@@ -308,8 +343,7 @@ namespace GeoViewer.View.Rendering
         /// <summary>
         /// Clears the whole rendered ma and data layer caches
         /// </summary>
-        /// <param name="clearAttachedObjects">Whether attached objects should be removed</param>
-        public void ClearMap(bool clearAttachedObjects = false)
+        public void ClearMap()
         {
             _updateCancelTask.TrySetCanceled();
             foreach (var tile in _requests.Keys)
@@ -318,8 +352,6 @@ namespace GeoViewer.View.Rendering
             }
 
             RemoveTiles(_renderedTiles.Keys);
-            if (clearAttachedObjects)
-                _mapObjects.Clear();
             MoveOrigin(new GlobePoint());
             CurrentWorldScale = 1f;
             _mapParent.localScale = Vector3.one;
@@ -350,7 +382,8 @@ namespace GeoViewer.View.Rendering
                 throw new ArgumentException("Unknown layer type");
             }
 
-            _updateCancelTask.SetCanceled();
+            if (!_updateCancelTask.Task.IsCanceled)
+                _updateCancelTask.SetCanceled();
 
             foreach (var tile in _renderedTiles)
             {
@@ -403,6 +436,7 @@ namespace GeoViewer.View.Rendering
             bool fillBaseTiles = true)
         {
             var settings = _layerManager.CurrentSegmentationSettings;
+            RecalculateCameraInformation();
             Queue<TileId> queue = new();
             foreach (var tile in settings.Projection.GlobeAreaToTiles(area, settings.ZoomBounds, targetTileCount))
             {
@@ -443,14 +477,16 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Calculates the target zoom factor for a given <paramref name="globePoint"/>
+        /// Calculates the target zoom factor for a given <paramref name="globePoint"/>, based on its distance to the camera
         /// </summary>
         /// <param name="globePoint">The <see cref="GlobePoint"/> to calculate the target zoom for</param>
         /// <returns>The target zoom</returns>
         private int GetTargetZoom(GlobePoint globePoint)
         {
+            var pointPos = GlobePointToApplicationPosition(globePoint, true);
+
             var distance = Vector3.Distance(
-                ApplicationPositionToWorldPosition(GlobePointToApplicationPosition(globePoint, true)),
+                ApplicationPositionToWorldPosition(pointPos),
                 ApplicationPositionToWorldPosition(Camera!.position));
 
             var log = Math.Log(
@@ -464,14 +500,17 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Calculates the target zoom factor for the closest point ofa given <paramref name="tileId"/>
+        /// Calculates the target zoom factor for a given <paramref name="tileId"/>.
         /// </summary>
         /// <param name="tileId">The <see cref="TileId"/> to calculate the target zoom for</param>
-        /// <returns>The target zoom</returns>
+        /// <returns>int.MinValue, if the <paramref name="tileId"/> is not in view and tile culling is enabled, the max target zoom otherwise</returns>
         private int GetTargetZoom(TileId tileId)
         {
-            return GetTargetZoom(CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId)
-                .GetClosestPoint(ApplicationPositionToGlobePoint(Camera!.position)));
+            var area = CurrentSegmentationSettings.Projection.TileToGlobeArea(tileId);
+            if (Settings.EnableTileCulling && !IsInView(area))
+                return int.MinValue;
+
+            return GetTargetZoom(area.GetClosestPoint(ApplicationPositionToGlobePoint(Camera!.position)));
         }
 
         #endregion Segmentation Calculation
@@ -495,6 +534,7 @@ namespace GeoViewer.View.Rendering
             {
                 CurrentWorldScale = TargetCamDistance / (distance / CurrentWorldScale);
             }
+
             _mapParent.transform.localScale = Vector3.one * (float)CurrentWorldScale;
         }
 
@@ -534,13 +574,13 @@ namespace GeoViewer.View.Rendering
         }
 
         /// <summary>
-        /// Tries to set the origin to the position of a given mapObject
+        /// Tries to set the origin to the position of a given sceneObject
         /// </summary>
-        /// <param name="mapObject">The object attached to the map to set the origin to</param>
-        public void MoveOrigin(Transform mapObject)
+        /// <param name="sceneObject">The object attached to the map to set the origin to</param>
+        public void MoveOrigin(SceneObject sceneObject)
         {
-            if (!_mapObjects.TryGetValue(mapObject, out var point)) return;
-            MoveOrigin(point);
+            if (sceneObject.GlobePoint == null) return;
+            MoveOrigin(sceneObject.GlobePoint);
         }
 
         #endregion Origin Movement
@@ -563,37 +603,57 @@ namespace GeoViewer.View.Rendering
         /// <param name="transform">The transform to attach</param>
         public void AttachToMap(Transform transform)
         {
-            var point = ApplicationPositionToGlobePoint(transform.position);
-            if (_mapObjects.TryAdd(transform, point))
-                transform.parent = _mapParent;
-            else
-                _mapObjects.TryUpdate(transform, point, _mapObjects[transform]);
+            transform.parent = _mapParent;
         }
 
         /// <summary>
-        /// Attaches the given transform to the map at the given <paramref name="globePoint"/>, so that it scales and moves with it.
+        /// Attaches the given sceneObject to the map at the given <paramref name="globePoint"/>, so that it scales and moves with it.
         /// This will also adjust its scale.
         /// </summary>
-        /// <param name="transform">The transform to attach</param>
-        /// <param name="globePoint">The globe point to attach the transform to</param>
-        /// <param name="pivotDelta">The amount to move the object pivot by</param>
-        /// <param name="attachToGround">Whether the pivot should be snapped to ground height</param>
-        public void AttachToMap(Transform transform, GlobePoint globePoint, Vector3 pivotDelta,
-            bool attachToGround = false)
+        /// <param name="sceneObject">The scene object to attach</param>
+        /// <param name="attachmentMode">The attachment mode of the <paramref name="sceneObject"/></param>
+        /// <param name="globePoint">The globe point to attach the <paramref name="sceneObject"/> to</param>
+        /// <param name="height">The height to attach the <paramref name="sceneObject"/> at</param>
+        public void AttachToMap(SceneObject sceneObject, AttachmentMode attachmentMode, GlobePoint globePoint,
+            float height)
         {
             var scale = (float)ViewProjection.GetScaleFactor(globePoint) * (float)CurrentWorldScale;
-            transform.localScale = Vector3.one * scale;
+            sceneObject.transform.localScale = Vector3.one * scale;
 
-            var pos = GlobePointToApplicationPosition(globePoint) - pivotDelta * scale;
+            if (attachmentMode == AttachmentMode.Absolute)
+                globePoint.Altitude = height;
+            var pos = GlobePointToApplicationPosition(globePoint);
 
-            if (attachToGround)
+            if (attachmentMode == AttachmentMode.RelativeToSurface)
             {
                 pos = ResampleHeight(pos);
-                pos.y -= pivotDelta.y * scale;
+                pos.y += height * scale;
             }
 
-            transform.position = pos;
-            AttachToMap(transform);
+            sceneObject.transform.position = pos;
+            sceneObject.AttachmentMode = attachmentMode;
+            sceneObject.GlobePoint = globePoint;
+            sceneObject.Height = height;
+            AttachToMap(sceneObject.transform);
+        }
+
+        /// <summary>
+        /// Gets called when a mesh is set for the given <paramref name="tileId"/>
+        /// </summary>
+        /// <param name="tileId">The tile for which the mesh was set</param>
+        private void OnMeshSet(TileId tileId)
+        {
+            if (!_currentSegmentation.Contains(tileId)) return;
+            var area = TileToArea(tileId);
+
+            foreach (var obj in ApplicationState.Instance.SceneObjects)
+            {
+                if (obj.AttachmentMode != AttachmentMode.RelativeToSurface || obj.GlobePoint == null) continue;
+                if (!area.Contains(obj.GlobePoint)) return;
+                var pos = ResampleHeight(obj.transform.position);
+                pos.y += obj.Height * (float)ViewProjection.GetScaleFactor(obj.GlobePoint) * (float)CurrentWorldScale;
+                obj.transform.position = pos;
+            }
         }
 
         #endregion Object Attachment
@@ -730,6 +790,7 @@ namespace GeoViewer.View.Rendering
             if (_renderedTiles.TryRemove(tileId, out var tileGameObject))
             {
                 tileGameObject.Remove();
+                tileGameObject.MeshSet -= OnMeshSet;
             }
         }
 

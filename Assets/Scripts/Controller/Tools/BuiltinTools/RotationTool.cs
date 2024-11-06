@@ -26,7 +26,7 @@ namespace GeoViewer.Controller.Tools.BuiltinTools
         /// </summary>
         private float2 _cursorStartDirection = float2.zero;
 
-        private readonly Dictionary<GameObject, ObjectData> _startData = new();
+        private readonly Dictionary<SceneObject, ObjectData> _startData = new();
 
         /// <summary>
         /// Create a new tool for rotating selected objects.

@@ -7,10 +7,13 @@ using GeoViewer.Controller.Files;
 using GeoViewer.Controller.Input;
 using GeoViewer.Model.State.Events;
 using GeoViewer.Model.Tools.Mode;
+using GeoViewer.View.FilePicking;
 using GeoViewer.View.Rendering;
+using SimpleFileBrowser;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace GeoViewer.Model.State
@@ -35,6 +38,11 @@ namespace GeoViewer.Model.State
             LayerManager = new LayerManager(Settings.DataLayers);
             MapRenderer = new MapRenderer(LayerManager, Settings);
             ReloadGraphicSettings();
+            foreach (var folder in QuickLinks.SpecialFolders)
+            {
+                var path = Environment.GetFolderPath(folder);
+                FileBrowser.AddQuickLink(folder.ToString(), path);
+            }
         }
 
         #endregion Singleton
@@ -100,39 +108,35 @@ namespace GeoViewer.Model.State
             set => _mode = value;
         }
 
-        private readonly HashSet<GameObject> _selectedObjects = new();
+        public readonly HashSet<SceneObject> SceneObjects = new();
 
         /// <summary>
         /// An enumerable containing all currently selected objects.
         /// The enumerable automatically filters destroyed objects.
         /// </summary>
-        public IEnumerable<GameObject> SelectedObjects
+        public IEnumerable<SceneObject> SelectedObjects
         {
-            get { return _selectedObjects.Where(obj => obj != null); }
+            get { return SceneObjects.Where(obj => obj.IsSelected); }
         }
 
         /// <summary>
         /// Adds an object to the set of selected objects.
         /// This also removes any already destroyed selected objects.
         /// </summary>
-        /// <param name="gameObject">the object which is selected</param>
-        public void AddSelectedObject(GameObject gameObject)
+        /// <param name="sceneObject">the object which is selected</param>
+        public void AddSceneObject(SceneObject sceneObject)
         {
-            _selectedObjects.Add(gameObject);
-
-            foreach (var obj in _selectedObjects.Where(obj => obj == null).ToArray())
-            {
-                _selectedObjects.Remove(obj);
-            }
+            SceneObjects.Add(sceneObject);
+            sceneObject.OnDestroy += RemoveSelectedObject;
         }
 
         /// <summary>
         /// Removes an object from the set of selected objects.
         /// </summary>
-        /// <param name="gameObject">the object which is deselected</param>
-        public void RemoveSelectedObject(GameObject gameObject)
+        /// <param name="sceneObject">the object which is deselected</param>
+        public void RemoveSelectedObject(SceneObject sceneObject)
         {
-            _selectedObjects.Remove(gameObject);
+            SceneObjects.Remove(sceneObject);
         }
 
         /// <summary>

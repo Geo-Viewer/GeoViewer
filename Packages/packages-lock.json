@@ -186,19 +186,26 @@
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.2d.sprite": "1.0.0",
         "com.unity.ugui": "1.0.0",
-        "com.unity.modules.animation": "1.0.0",
-        "com.unity.modules.imageconversion": "1.0.0",
-        "com.unity.modules.physics": "1.0.0",
-        "com.unity.modules.physics2d": "1.0.0",
+        "com.unity.2d.sprite": "1.0.0",
         "com.unity.modules.ui": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.physics2d": "1.0.0",
         "com.unity.modules.uielements": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.modules.unitywebrequesttexture": "1.0.0",
-        "com.unity.modules.unitywebrequestwww": "1.0.0"
+        "com.unity.modules.unitywebrequestwww": "1.0.0",
+        "com.unity.modules.unitywebrequesttexture": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.yasirkula.simplefilebrowser": {
+      "version": "https://github.com/yasirkula/UnitySimpleFileBrowser.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "07398a29da28adc0f074b5a364e5f209cf20285e"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

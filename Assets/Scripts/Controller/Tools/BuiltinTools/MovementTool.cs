@@ -19,7 +19,7 @@ namespace GeoViewer.Controller.Tools.BuiltinTools
     /// </summary>
     public class MovementTool : Tool
     {
-        private readonly Dictionary<GameObject, float3> _startPositions = new();
+        private readonly Dictionary<SceneObject, float3> _startPositions = new();
         private float2 _cursorStartPosition = float2.zero;
 
         /// <summary>

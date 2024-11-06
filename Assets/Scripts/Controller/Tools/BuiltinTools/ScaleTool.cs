@@ -21,7 +21,7 @@ namespace GeoViewer.Controller.Tools.BuiltinTools
     {
         private const float ScalingStrength = 4f;
 
-        private readonly Dictionary<GameObject, ObjectData> _startData = new();
+        private readonly Dictionary<SceneObject, ObjectData> _startData = new();
 
         /// <summary>
         /// The relative distance from the cursor to the center of the screen when the user initiates a scaling process
