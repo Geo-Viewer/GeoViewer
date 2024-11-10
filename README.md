@@ -1,4 +1,4 @@
-<p align="center"><img src="logo.svg" width="500" height="300" /><p/>
+<p align="center"><img src="Docs/logo.svg" width="500" height="300" /><p/>
 
 # GeoViewer
 
