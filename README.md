@@ -2,6 +2,10 @@
 
 # GeoViewer
 
+
+https://github.com/user-attachments/assets/09ba362e-45e8-4f7e-8929-e1f788942f3e
+
+
 ## Introduction
 
 GeoViewer is an application aiming to combine model viewing with map rendering to visualize models in their respective geographic context.
@@ -19,11 +23,7 @@ GeoViewer was developed using the [Unity Game Engine](https://unity.com/) (2022.
 
 ## Data
 
-The application uses [Openstreetmap](https://www.openstreetmap.org/copyright) for fetching the street map data and supports diplaying height data served through an [Opentopodata](https://www.opentopodata.org/)-compatible API. The respective URLs are defined in the config file found at
-
-**Windows:** `AppData/Roaming/GeoViewer`
-
-**Linux:** `$XDG_CONFIG_HOME/GeoViewer`, usually `~/.config/GeoViewer`
+The application uses [Openstreetmap](https://www.openstreetmap.org/copyright) for fetching the street map data and supports diplaying height data served through an [Opentopodata](https://www.opentopodata.org/)-compatible API. The respective URLs are defined in the [config file](Docs/ConfigDocs.md).
 
 We do not recommend using the free public API from Opentopodata, as it is too slow at delivering the height data to the application. You can either host your own instance, which allows you to use your own datasets to display the height data or use another compatible elevation service (for example [Google Elevation API](https://developers.google.com/maps/documentation/elevation/start)). We recommend using [TopoSharp](https://github.com/LGK-Productions/TopoSharp) as a replacement of Opentopodata, as it is optimized for this Application. In case the map loading takes a lot of time, consider lowering the MeshResolution in the config.
 
@@ -67,7 +67,7 @@ GeoViewer uses a layer system to display map data, which can be configured in th
 
 **TopoSharpMeshLayer**: A layer for requesting height data from [TopoSharp's](https://github.com/LGK-Productions/TopoSharp) v2 API. This includes being able to request data from the [TopoBathy3D layer](https://www.arcgis.com/home/item.html?id=0c69ba5a5d254118841d43f03aa3e97d) from esri.
 
-All these layers can be added in the config. The layer priority determines which layers will be rendered.
+All these layers can be added in the [config](Docs/ConfigDocs.md). The layer priority determines which layers will be rendered.
 
 ## Contributing
 
