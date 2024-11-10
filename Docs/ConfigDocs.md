@@ -6,7 +6,7 @@ The config file is a json file found at
 **Linux:** `$XDG_CONFIG_HOME/GeoViewer`, usually `~/.config/GeoViewer`
 
 It will be reloaded every time the application starts.
----
+
 ## General Settings
 
 | Name                 | Description                                                                                                                                       | Accepted Values                                 |
