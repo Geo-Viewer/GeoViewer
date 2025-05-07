@@ -1,0 +1,51 @@
+root = true
+
+# All files
+[*]
+indent_style = space
+end_of_line = lf
+
+# C#
+[*.cs]
+
+
+##########
+# Spacing
+##########
+
+# Indentation and spacing
+indent_size = 4
+indent_style = space
+tab_width = 4
+
+#######
+# Code
+#######
+
+# Using Directives
+dotnet_sort_system_directives_first = true
+# Always use braces
+csharp_prefer_braces = true
+
+################
+# Roslynator
+################
+
+dotnet_analyzer_diagnostic.category-roslynator.severity = warning
+roslynator_refactorings.enabled = true
+roslynator_compiler_diagnostic_fixes.enabled = true
+
+roslynator_body_style = block
+
+# Remove original exception from throw statement
+dotnet_diagnostic.rcs1044.severity = none
+# Disable parenthesis warnings
+dotnet_diagnostic.rcs1123.severity = none
+# Don't warn on unused method declarations
+dotnet_diagnostic.rcs1213.severity = none
+# Convert comment to doc comment
+dotnet_diagnostic.rcs1181.severity = none
+# Explicit enum values
+dotnet_diagnostic.rcs1161.severity = none
+# Make value readonly
+dotnet_diagnostic.rcs1169.severity = none

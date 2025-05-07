@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/UI%20Toolkit/style.uss?fileID=7433441132597879392&amp;guid=74955940cd1247c78c0e1cf2567b13d4&amp;type=3#style" />
+    <ui:VisualElement name="background" style="flex-grow: 1; min-width: auto; min-height: auto; color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0.5);">
+        <ui:VisualElement name="welcomescreen" style="max-width: 50%; max-height: 50%; align-self: center; justify-content: center; width: auto; height: auto; left: 0; top: 25%; right: 0; bottom: 0; min-width: 40%; min-height: 40%; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom-right-radius: 20px; border-bottom-left-radius: 20px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;">
+            <ui:VisualElement class="welcome" style="flex-grow: 1; top: auto; align-self: stretch; height: 5%; align-items: stretch; justify-content: flex-start;">
+                <ui:VisualElement style="flex-grow: 1;">
+                    <ui:Button text="Close" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Close" class="menu" style="right: 0; max-width: none; left: auto; position: absolute; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-bottom-left-radius: 6px; margin-top: 4px; padding-bottom: 10px; padding-top: 10px;" />
+                </ui:VisualElement>
+                <ui:VisualElement style="flex-grow: 1; height: auto; align-items: stretch; justify-content: flex-end; align-self: stretch; -unity-text-align: upper-left; flex-direction: column; width: auto;">
+                    <ui:Label tabindex="-1" text="GeoViewer" parse-escape-sequences="true" display-tooltip-when-elided="true" name="GeoViewer" focusable="false" style="position: relative; top: auto; bottom: auto; -unity-font-style: bold-and-italic; font-size: 32px; padding-left: 10px; margin-left: 10px; margin-bottom: 5px; padding-bottom: 5px;" />
+                </ui:VisualElement>
+                <ui:VisualElement style="flex-grow: 1; position: absolute; background-image: url(&apos;project://database/Assets/Art/Logo.png?fileID=21300000&amp;guid=88d064ae29a3dde4296dc00f4192fd42&amp;type=3#Logo&apos;); height: 100px; left: 15px; width: 100px;" />
+            </ui:VisualElement>
+            <ui:VisualElement class="menu" style="height: 60%;">
+                <ui:VisualElement name="Sections" style="flex-grow: 1; flex-direction: row; align-items: flex-start; justify-content: space-around; align-self: stretch; height: 40%; -unity-text-align: upper-left;" />
+                <ui:VisualElement name="VisualElement" style="flex-grow: 1; height: auto; width: auto; align-items: flex-end; justify-content: flex-end;">
+                    <ui:Label tabindex="-1" text="Version: " parse-escape-sequences="true" display-tooltip-when-elided="true" name="Version" style="white-space: nowrap; -unity-text-align: upper-right; flex-direction: row; height: auto; font-size: 11px; color: rgb(150, 150, 150); padding-bottom: 2px; margin-bottom: 1px;" />
+                    <ui:Label tabindex="-1" text="Build: " parse-escape-sequences="true" display-tooltip-when-elided="true" name="Build" style="-unity-text-align: upper-right; opacity: 1; flex-direction: row; flex-wrap: wrap-reverse; white-space: normal; height: auto; width: auto; font-size: 11px; color: rgb(150, 150, 150); padding-bottom: 4px; margin-top: 2px; padding-top: 2px;" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

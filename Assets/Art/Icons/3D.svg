@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="83.439941"
+   height="44.862427"
+   viewBox="0 0 83.439941 44.862427"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="UI new.svg"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   inkscape:export-filename="export/Menubar.png"
+   inkscape:export-xdpi="288"
+   inkscape:export-ydpi="288"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#c7f4ff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="1.2240864"
+     inkscape:cx="910.88341"
+     inkscape:cy="435.01831"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer13"
+     showguides="true"
+     inkscape:lockguides="false"
+     inkscape:export-bgcolor="#cef7ffff"
+     showgrid="false">
+    <sodipodi:guide
+       position="-1013.5727,1936.516"
+       orientation="-1,0"
+       id="guide7"
+       inkscape:locked="false"
+       inkscape:label="Welcome Text"
+       inkscape:color="rgb(26,95,180)" />
+    <sodipodi:guide
+       position="-1655.1385,1473.152"
+       orientation="-1,0"
+       id="guide12"
+       inkscape:locked="false"
+       inkscape:label="info text"
+       inkscape:color="rgb(230,97,0)" />
+    <inkscape:grid
+       id="grid44"
+       units="px"
+       originx="-1702.2964"
+       originy="-1003.9701"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch5"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5" />
+    </linearGradient>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="Interface"
+     inkscape:highlight-color="#6535f3"
+     transform="translate(-1702.2964,-1003.9701)">
+    <g
+       inkscape:groupmode="layer"
+       id="layer12"
+       inkscape:label="Layers">
+      <path
+         d="m 1725.9585,1024.6781 q 4.3732,1.1295 6.6323,3.9388 2.288,2.7804 2.288,7.0957 0,6.4296 -4.9236,9.7892 -4.9235,3.3307 -14.3652,3.3307 -3.3306,0 -6.6902,-0.5503 -3.3307,-0.5213 -6.6034,-1.5929 v -8.6018 q 3.1279,1.564 6.1979,2.3749 3.099,0.782 6.0821,0.782 4.4312,0 6.7771,-1.535 2.3749,-1.535 2.3749,-4.4023 0,-2.9541 -2.4328,-4.4601 -2.4039,-1.535 -7.1247,-1.535 h -4.4602 v -7.1826 h 4.6919 q 4.1995,0 6.2558,-1.3033 2.0563,-1.3323 2.0563,-4.0257 0,-2.4908 -1.9984,-3.852 -1.9984,-1.3612 -5.6476,-1.3612 -2.6935,0 -5.4449,0.6082 -2.7514,0.6082 -5.4738,1.7956 v -8.1673 q 3.3017,-0.9268 6.5454,-1.3902 3.2438,-0.4634 6.3717,-0.4634 8.428,0 12.5985,2.7804 4.1995,2.7514 4.1995,8.3121 0,3.7941 -1.9984,6.2269 -1.9983,2.4038 -5.9082,3.3886 z m 30.2364,-11.498 v 26.3845 h 3.9968 q 6.835,0 10.4263,-3.3886 3.6203,-3.3886 3.6203,-9.8471 0,-6.4296 -3.5913,-9.7892 -3.5913,-3.3596 -10.4553,-3.3596 z m -11.1504,-8.428 h 11.7586 q 9.8471,0 14.6548,1.4192 4.8367,1.3901 8.2832,4.7498 3.041,2.9251 4.5181,6.7481 1.4771,3.823 1.4771,8.6597 0,4.8946 -1.4771,8.7466 -1.4771,3.823 -4.5181,6.7481 -3.4754,3.3596 -8.3411,4.7788 -4.8656,1.3902 -14.5969,1.3902 h -11.7586 z"
+         id="text20"
+         style="font-weight:bold;font-size:59.3144px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';fill:#f9f9f9;stroke-width:4.44858"
+         inkscape:label="3D"
+         aria-label="3D" />
+    </g>
+  </g>
+</svg>
